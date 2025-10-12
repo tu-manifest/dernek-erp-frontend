@@ -218,22 +218,26 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       className={`bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 text-white w-72 min-h-screen flex flex-col shadow-2xl border-r border-slate-700/50 ${className}`}
     >
       {/* Header */}
-      <div className="p-6 border-b border-slate-700/50 bg-slate-800/50 backdrop-blur-sm">
-        {/* Aşağıdaki satıra justify-center eklendi */}
-        <div className="flex items-center justify-center space-x-3">
-          {" "}
-          <Image
-            src={"/logo.png"}
-            alt="Logo"
-            width={60}
-            height={60}
-            className="object-contain rounded-lg shadow-blue-500/30 shadow-xl transition-all duration-300 hover:scale-105"
-          />
-          <div>
-            <h1 className="text-xl font-bold text-white ">Derp</h1>
-          </div>{" "}
-        </div>
-      </div>
+ <div className="pl-6 pr-14 border-b border-slate-700/50 bg-gradient-to-b from-slate-800/80 to-slate-900/80 backdrop-blur-md">
+  <div className="flex items-center justify-center">
+    <div className="relative flex items-center justify-center">
+      <Image
+        src="/logo.png"
+        alt="Derp Logo"
+        width={250}
+        height={250}
+        className="rounded-xl z-10 relative"
+      />
+    </div>
+
+    <div className="flex flex-col justify-center">
+      <h1 className="text-3xl font-bold text-white tracking-wide leading-tight">
+        Derp
+      </h1>
+    </div>
+  </div>
+</div>
+
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
