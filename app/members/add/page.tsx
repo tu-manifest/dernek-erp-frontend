@@ -1,7 +1,7 @@
 "use client"
 import React, { useState } from 'react';
-import { User, Phone, Mail, MapPin, Calendar, CreditCard, Upload, FileText, Shield, Check } from 'lucide-react';
-
+import { User, Phone, Mail, MapPin, Calendar, CreditCard, Upload, FileText, Shield, Check, Info
+} from 'lucide-react';
 interface FormData {
   fullName: string;
   tcNumber: string;
@@ -488,6 +488,28 @@ const MembershipForm: React.FC = () => {
                   {errors.paymentStatus && <p className="text-red-500 text-sm mt-2">{errors.paymentStatus}</p>}
                 </div>
               </div>
+            </div>
+             {/* Membership Details Section */}
+            <div className="bg-gray-50 rounded-2xl p-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-8 flex items-center">
+                <Info className="mr-3 text-blue-600" size={28} />
+                Ekstra Bilgi
+              </h2>
+              <div className="lg:col-span-2">
+                  <div>
+                    <textarea
+                      value={formData.address}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('address', e.target.value)}
+                      rows={4}
+                      className={`w-full pl-3 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base resize-none ${
+                        errors.address ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Ekstra bilgi varsa buraya yazabilirsiniz..."
+                    />
+                  </div>
+                  {errors.address && <p className="text-red-500 text-sm mt-2">{errors.address}</p>}
+                </div>
+              
             </div>
 
             {/* File Upload Section */}
