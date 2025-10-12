@@ -81,7 +81,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       icon: Home,
       path: "/",
       single: true,
-      badge: "Ana",
     },
     {
       id: "members",
@@ -93,7 +92,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Üye Listesi",
           icon: Filter,
           path: "/members/list",
-          badge: "245",
         },
         { title: "Grup Yönetimi", icon: Users, path: "/members/groups" },
         {
@@ -113,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Etkinlik Listesi",
           icon: List,
           path: "/events/list",
-          badge: "8",
+    
         },
         {
           title: "Katılım Takibi",
@@ -124,7 +122,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Duyuru Gönder",
           icon: Bell,
           path: "/events/announcements",
-          badge: "3",
         },
       ],
     },
@@ -138,7 +135,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Planlanmış Paylaşımlar",
           icon: Clock,
           path: "/social/scheduled",
-          badge: "12",
+
         },
         {
           title: "Analiz Raporları",
@@ -158,7 +155,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Borç Görüntüleme",
           icon: Eye,
           path: "/finance/debt-view",
-          badge: "Yeni",
+
         },
         { title: "Raporlar", icon: BarChart3, path: "/finance/reports" },
         { title: "Dışa Aktar", icon: Download, path: "/finance/export" },
@@ -178,7 +175,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Döküman Listesi",
           icon: List,
           path: "/documents/list",
-          badge: "156",
+
         },
         {
           title: "Erişim İzinleri",
