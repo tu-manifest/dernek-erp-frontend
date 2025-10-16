@@ -10,96 +10,64 @@ import {
   Users,
   Calendar,
   FileText,
-  Settings
+  Settings,
+  TrendingUp,
+  Scale,
+  Network
 } from 'lucide-react';
 
+// API'den gelen grup verisi için interface
 interface Group {
-  id: string;
-  groupName: string;
-  memberCount: number;
-  createdDate: string;
+  id: number;
+  group_name: string;
   description: string;
   isActive: boolean;
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface GroupTableProps {
   groups?: Group[];
+  statistics?: {
+    totalGroups: number;
+    activeGroups: number;
+    inactiveGroups: number;
+    totalMembers: number;
+    averageMembersPerGroup: number;
+    largestGroupSize: number;
+    smallestGroupSize: number;
+    groupsWithoutMembers: number;
+  };
   onEdit?: (group: Group) => void;
-  onDelete?: (groupId: string) => void;
+  onDelete?: (groupId: number) => void;
   onAddNew?: () => void;
+  isLoading?: boolean;
+  isError?: boolean;
 }
 
 const GroupTable: React.FC<GroupTableProps> = ({
   groups = [],
+  statistics,
   onEdit,
   onDelete,
-  onAddNew
+  onAddNew,
+  isLoading = false,
+  isError = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [sortField, setSortField] = useState<keyof Group>('groupName');
+  const [sortField, setSortField] = useState<keyof Group>('group_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
 
-  // Sample data for demonstration
-  const defaultGroups: Group[] = [
-    {
-      id: '1',
-      groupName: 'Yönetim Kurulu',
-      memberCount: 7,
-      createdDate: '2023-01-15',
-      description: 'Derneğin yönetim kurulu üyeleri. Stratejik kararlar alır ve derneği yönetir.',
-      isActive: true
-    },
-    {
-      id: '2',
-      groupName: 'Denetleme Kurulu',
-      memberCount: 3,
-      createdDate: '2023-01-15',
-      description: 'Mali denetim ve hesap kontrolü yapan kurul üyeleri.',
-      isActive: true
-    },
-    {
-      id: '3',
-      groupName: 'Genç Üyeler',
-      memberCount: 25,
-      createdDate: '2023-03-10',
-      description: '18-30 yaş arası aktif genç üyeler. Etkinlik organizasyonu yapar.',
-      isActive: true
-    },
-    {
-      id: '4',
-      groupName: 'Etkinlik Komitesi',
-      memberCount: 12,
-      createdDate: '2023-02-20',
-      description: 'Sosyal etkinlikler, seminerler ve konferansları organize eden komite.',
-      isActive: true
-    },
-    {
-      id: '5',
-      groupName: 'Eski Yönetim',
-      memberCount: 5,
-      createdDate: '2022-01-15',
-      description: 'Önceki dönem yönetim kurulu üyeleri. Danışman rolündedir.',
-      isActive: false
-    },
-    {
-      id: '6',
-      groupName: 'Onur Üyeleri',
-      memberCount: 8,
-      createdDate: '2023-01-01',
-      description: 'Derneğe özel katkıları olan ve onur üyesi unvanı verilen değerli üyeler.',
-      isActive: true
-    }
-  ];
-
-  const displayGroups = groups.length > 0 ? groups : defaultGroups;
+  const displayGroups = groups || [];
 
   // Filter and search logic
   const filteredGroups = displayGroups
     .filter(group => {
       const matchesSearch = 
-        group.groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        group.group_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         group.description.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesFilter = 
@@ -129,7 +97,7 @@ const GroupTable: React.FC<GroupTableProps> = ({
     }
   };
 
-  const handleSelectGroup = (groupId: string) => {
+  const handleSelectGroup = (groupId: number) => {
     setSelectedGroups(prev => 
       prev.includes(groupId) 
         ? prev.filter(id => id !== groupId)
@@ -146,25 +114,60 @@ const GroupTable: React.FC<GroupTableProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('tr-TR');
+    return new Date(dateString).toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
-  const getTotalMembers = () => {
-    return filteredGroups.reduce((total, group) => total + group.memberCount, 0);
-  };
+  // Loading durumu
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6">
+          <h2 className="text-2xl font-bold text-white mb-2">Grup Yönetimi</h2>
+          <p className="text-blue-100">Veriler yükleniyor...</p>
+        </div>
+        <div className="p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Gruplar yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error durumu
+  if (isError) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 p-6">
+          <h2 className="text-2xl font-bold text-white mb-2">Hata</h2>
+          <p className="text-red-100">Gruplar yüklenirken bir hata oluştu</p>
+        </div>
+        <div className="p-8 text-center">
+          <div className="text-red-500 text-lg mb-4">
+            Veriler yüklenirken bir hata oluştu
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Tekrar Dene
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700  p-6">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-white mb-2">Grup Yönetimi</h2>
-            <div className="flex items-center space-x-4 text-purple-100">
-              <span>Toplam {filteredGroups.length} grup</span>
-              <span>•</span>
-              <span>{getTotalMembers()} toplam üye</span>
-            </div>
+
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
@@ -176,7 +179,7 @@ const GroupTable: React.FC<GroupTableProps> = ({
                 placeholder="Grup ara..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 bg-white py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-full sm:w-64"
+                className="pl-10 pr-4 bg-white py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
               />
             </div>
             
@@ -184,7 +187,7 @@ const GroupTable: React.FC<GroupTableProps> = ({
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2.5 border bg-white border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="px-4 py-2.5 border bg-white border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">Tüm Gruplar</option>
               <option value="active">Aktif Gruplar</option>
@@ -211,64 +214,77 @@ const GroupTable: React.FC<GroupTableProps> = ({
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="bg-gray-50 p-6 border-b">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="text-blue-600" size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">Aktif Gruplar</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {filteredGroups.filter(g => g.isActive).length}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Users className="text-green-600" size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">Toplam Üye</p>
-                <p className="text-xl font-bold text-gray-900">{getTotalMembers()}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Calendar className="text-yellow-600" size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">Ortalama Üye</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {filteredGroups.length > 0 ? Math.round(getTotalMembers() / filteredGroups.length) : 0}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Settings className="text-purple-600" size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">En Büyük Grup</p>
-                <p className="text-xl font-bold text-gray-900">
-                  {filteredGroups.length > 0 ? Math.max(...filteredGroups.map(g => g.memberCount)) : 0}
-                </p>
-              </div>
-            </div>
-          </div>
+     {/* Statistics Cards */}
+<div className="bg-gray-50 p-6 border-b">
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    
+    {/* 1. Aktif Gruplar */}
+    <div className="bg-white p-4 rounded-lg shadow-sm">
+      <div className="flex items-center">
+        <div className="p-2 bg-blue-100 rounded-lg">
+          {/* KONU: Grupların kendisi. Users yerine daha genel bir temsil. */}
+          <Network className="text-blue-600" size={20} /> 
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium text-gray-600">Aktif Gruplar</p>
+          <p className="text-xl font-bold text-gray-900">
+            {statistics?.activeGroups || filteredGroups.filter(g => g.isActive).length}
+          </p>
         </div>
       </div>
+    </div>
+    
+    {/* 2. Toplam Üye */}
+    <div className="bg-white p-4 rounded-lg shadow-sm">
+      <div className="flex items-center">
+        <div className="p-2 bg-green-100 rounded-lg">
+          {/* KONU: Toplam kişi sayısı. Users en uygun ikondur. */}
+          <Users className="text-green-600" size={20} />
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium text-gray-600">Toplam Üye</p>
+          <p  className="text-xl font-bold text-gray-900">
+            {statistics?.totalMembers || filteredGroups.reduce((total, group) => total + group.memberCount, 0)}
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    {/* 3. Ortalama Üye */}
+    <div className="bg-white p-4 rounded-lg shadow-sm">
+      <div className="flex items-center">
+        <div className="p-2 bg-yellow-100 rounded-lg">
+          {/* KONU: Ortalama, denge veya hesaplama. Scale veya Equal en uygunudur. */}
+          <Scale className="text-yellow-600" size={20} /> 
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium text-gray-600">Ortalama Üye</p>
+          <p className="text-xl font-bold text-gray-900">
+            {statistics?.averageMembersPerGroup || 
+              (filteredGroups.length > 0 ? Math.round(filteredGroups.reduce((total, group) => total + group.memberCount, 0) / filteredGroups.length) : 0)}
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    {/* 4. En Kalabalık Grup */}
+    <div className="bg-white p-4 rounded-lg shadow-sm">
+      <div className="flex items-center">
+        <div className="p-2 bg-red-100 rounded-lg"> {/* Rengi Vurgu için kırmızıya çektim */}
+          {/* KONU: En yüksek değer, zirve veya kalabalık. */}
+          <TrendingUp className="text-red-600" size={20} />
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium text-gray-600">En Kalabalık Grup</p>
+          <p className="text-xl font-bold text-gray-900">
+            {statistics?.largestGroupSize || 
+              (filteredGroups.length > 0 ? Math.max(...filteredGroups.map(g => g.memberCount)) : 0)}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
       {/* Table */}
       <div className="overflow-x-auto">
@@ -280,18 +296,18 @@ const GroupTable: React.FC<GroupTableProps> = ({
                   type="checkbox"
                   checked={selectedGroups.length === filteredGroups.length && filteredGroups.length > 0}
                   onChange={handleSelectAll}
-                  className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
               </th>
               <th 
                 className="w-64 px-4 py-4 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => handleSort('groupName')}
+                onClick={() => handleSort('group_name')}
               >
                 <div className="flex items-center space-x-2">
                   <Users size={16} />
                   <span>Grup Adı</span>
-                  {sortField === 'groupName' && (
-                    <span className="text-purple-600">
+                  {sortField === 'group_name' && (
+                    <span className="text-blue-600">
                       {sortDirection === 'asc' ? '↑' : '↓'}
                     </span>
                   )}
@@ -305,7 +321,7 @@ const GroupTable: React.FC<GroupTableProps> = ({
                   <Users size={16} />
                   <span>Üye Sayısı</span>
                   {sortField === 'memberCount' && (
-                    <span className="text-purple-600">
+                    <span className="text-blue-600">
                       {sortDirection === 'asc' ? '↑' : '↓'}
                     </span>
                   )}
@@ -313,13 +329,13 @@ const GroupTable: React.FC<GroupTableProps> = ({
               </th>
               <th 
                 className="w-40 px-4 py-4 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => handleSort('createdDate')}
+                onClick={() => handleSort('createdAt')}
               >
                 <div className="flex items-center space-x-2">
                   <Calendar size={16} />
                   <span>Oluşturma Tarihi</span>
-                  {sortField === 'createdDate' && (
-                    <span className="text-purple-600">
+                  {sortField === 'createdAt' && (
+                    <span className="text-blue-600">
                       {sortDirection === 'asc' ? '↑' : '↓'}
                     </span>
                   )}
@@ -328,7 +344,7 @@ const GroupTable: React.FC<GroupTableProps> = ({
               <th className="w-96 px-4 py-4 text-left text-sm font-semibold text-gray-700">
                 <div className="flex items-center space-x-2">
                   <FileText size={16} />
-                  <span>Açıklama/Notlar</span>
+                  <span>Açıklama</span>
                 </div>
               </th>
               <th className="w-24 px-4 py-4 text-left text-sm font-semibold text-gray-700">
@@ -344,7 +360,7 @@ const GroupTable: React.FC<GroupTableProps> = ({
               <tr 
                 key={group.id} 
                 className={`hover:bg-gray-50 transition-colors ${
-                  selectedGroups.includes(group.id) ? 'bg-purple-50' : ''
+                  selectedGroups.includes(group.id) ? 'bg-blue-50' : ''
                 }`}
               >
                 <td className="px-4 py-4">
@@ -352,29 +368,27 @@ const GroupTable: React.FC<GroupTableProps> = ({
                     type="checkbox"
                     checked={selectedGroups.includes(group.id)}
                     onChange={() => handleSelectGroup(group.id)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${
-                      group.isActive ? 'bg-green-400' : 'bg-gray-400'
-                    }`}></div>
-                    <div className="font-medium text-gray-900">{group.groupName}</div>
+                   
+                    <div className="font-medium text-gray-900">{group.group_name}</div>
                   </div>
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center">
-                    <span className="text-2xl font-bold text-purple-600">{group.memberCount}</span>
+                    <span className="text-2xl font-bold text-blue-600">{group.memberCount}</span>
                     <span className="text-sm text-gray-500 ml-1">üye</span>
                   </div>
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">
-                  {formatDate(group.createdDate)}
+                  {formatDate(group.createdAt)}
                 </td>
                 <td className="px-4 py-4">
                   <div className="text-sm text-gray-600 max-w-80">
-                    <p className="line-clamp-2" title={group.description}>
+                    <p className="line-clamp-3" title={group.description}>
                       {group.description}
                     </p>
                   </div>
@@ -413,16 +427,20 @@ const GroupTable: React.FC<GroupTableProps> = ({
       </div>
 
       {/* Empty State */}
-      {filteredGroups.length === 0 && (
+      {filteredGroups.length === 0 && !isLoading && (
         <div className="text-center py-12">
           <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Grup bulunamadı</h3>
-          <p className="text-gray-500 mb-4">Arama kriterlerinize uygun grup bulunmamaktadır.</p>
+          <p className="text-gray-500 mb-4">
+            {searchTerm || filterStatus !== 'all' 
+              ? 'Arama kriterlerinize uygun grup bulunmamaktadır.' 
+              : 'Henüz hiç grup oluşturulmamış.'}
+          </p>
           <button 
             onClick={onAddNew}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            İlk Grubu Oluştur
+            {searchTerm || filterStatus !== 'all' ? 'Tüm Grupları Göster' : 'İlk Grubu Oluştur'}
           </button>
         </div>
       )}
@@ -436,13 +454,7 @@ const GroupTable: React.FC<GroupTableProps> = ({
             )}
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-700">Sayfa başına:</span>
-            <select className="border border-gray-300 rounded px-2 py-1 text-sm">
-              <option>10</option>
-              <option>25</option>
-              <option>50</option>
-              <option>100</option>
-            </select>
+            <span className="text-sm text-gray-700">Toplam: {filteredGroups.length} grup</span>
           </div>
         </div>
       </div>
