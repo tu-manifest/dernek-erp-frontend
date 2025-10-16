@@ -1,12 +1,23 @@
-import React from 'react';
+//etkinlik listesi sayfası
 
-export default function EventListPage() {
+"use client";
+
+import EventTable from "../../../components/eventTable";
+
+export default function EventsPage() {
+  const handleEdit = (etkinlik: any) => {
+    console.log("Düzenle:", etkinlik);
+    // örnek: router.push(`/events/edit/${etkinlik.id}`);
+  };
+
+  const handleDelete = (id: number) => {
+    console.log("Sil:", id);
+    // örnek: deleteEvent(id) çağrısı
+  };
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Etkinlik Listesi</h1>
-      <div className="bg-white rounded-lg shadow p-6">
-        <p>Etkinlik listesi burada yer alacak.</p>
-      </div>
+      <EventTable onEdit={handleEdit} onDelete={handleDelete} />
     </div>
   );
 }

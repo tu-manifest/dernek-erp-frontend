@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { User, Phone, Mail, MapPin, Calendar, CreditCard, Upload, FileText, Shield, Check, Info
 } from 'lucide-react';
+import useGetGroups from '@/hooks/useGetGroups';
 interface FormData {
   fullName: string;
   tcNumber: string;
@@ -49,13 +50,6 @@ const MembershipForm: React.FC = () => {
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
-
-  const membershipTypes: SelectOption[] = [
-    { value: 'active', label: 'Aktif Üye' },
-    { value: 'honorary', label: 'Onur Üyesi' },
-    { value: 'supporting', label: 'Destekleyici Üye' },
-    { value: 'student', label: 'Öğrenci Üyesi' }
-  ];
 
   const duesFrequencies: SelectOption[] = [
     { value: 'monthly', label: 'Aylık' },
@@ -264,6 +258,9 @@ const MembershipForm: React.FC = () => {
     }
   };
 
+  const { groups, isLoading, isError } = useGetGroups();
+  console.log('Fetched groups:', groups);
+
   return (
     <div className="min-h-screen py-16 px-6 lg:px-12 bg-gray-100">
       <div className="max-w-6xl mx-auto">
@@ -328,7 +325,7 @@ const MembershipForm: React.FC = () => {
                   {errors.birthDate && <p className="text-red-500 text-sm mt-2">{errors.birthDate}</p>}
                 </div>
 
-                <div>
+             <div>
                   <label className="block text-base font-medium text-gray-700 mb-3">
                     Üyelik Türü <span className="text-red-500">*</span>
                   </label>
@@ -338,13 +335,32 @@ const MembershipForm: React.FC = () => {
                     className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
                       errors.membershipType ? 'border-red-500' : 'border-gray-300'
                     }`}
+                    disabled={isLoading}
                   >
-                    <option value="">Üyelik türü seçiniz</option>
-                    {membershipTypes.map((type: SelectOption) => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
+                    <option value="">
+                      {isLoading ? 'Yükleniyor...' : 'Üyelik türü seçiniz'}
+                    </option>
+                    {isError && (
+                      <option value="" disabled>
+                        Gruplar yüklenirken hata oluştu
+                      </option>
+                    )}
+                    {Array.isArray(groups) && groups.length > 0 ? (
+                      groups.map((group: any) => (
+                        <option key={group.id || group._id} value={group.id || group._id}>
+                          {group.groupName || group.group_name || group.name}
+                        </option>
+                      ))
+                    ) : (
+                      !isLoading && !isError && (
+                        <option value="" disabled>
+                          Henüz grup bulunamadı
+                        </option>
+                      )
+                    )}
                   </select>
                   {errors.membershipType && <p className="text-red-500 text-sm mt-2">{errors.membershipType}</p>}
+                  {isError && <p className="text-red-500 text-sm mt-2">Gruplar yüklenirken hata oluştu</p>}
                 </div>
               </div>
             </div>
