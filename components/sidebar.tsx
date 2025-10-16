@@ -6,6 +6,7 @@ import {
   Calendar,
   Share2,
   DollarSign,
+  CalendarPlus,
   FileText,
   ChevronDown,
   UserPlus,
@@ -27,9 +28,14 @@ import {
   Settings,
   Home,
   LucideIcon,
+  Wallpaper,
+  Users2Icon,
+  Megaphone,
+  HeartHandshake,
+  Briefcase,
+  NotebookText,
 } from "lucide-react";
 import Image from "next/image";
-
 interface SubMenuItem {
   title: string;
   icon: LucideIcon;
@@ -82,6 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       path: "/",
       single: true,
     },
+
     {
       id: "members",
       title: "Üye Yönetimi",
@@ -101,6 +108,44 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         },
       ],
     },
+    
+    {
+      id: "donations",
+      title: "Bağış Yönetimi",
+      icon: HeartHandshake, // Yeni ikon önerisi
+      subItems: [
+        { title: "Yeni Bağış Oluştur", icon: DollarSign, path: "/donations/create" }, // İstenen sayfa
+        { title: "Dış Bağışçı Ekle", icon: UserPlus, path: "/donations/donor/add" }, // İstenen sayfa
+        { title: "Bağış Listesi", icon: List, path: "/donations/list" },
+        { title: "Bağışçı Listesi", icon: Users, path: "/donations/donors" },
+        { title: "Kampanya Yönetimi", icon: Megaphone, path: "/donations/campaigns" },
+      ],
+    },
+    {
+      id: "meetings",
+      title: "Toplantı Yönetimi",
+      icon: Briefcase, // Yeni ikon önerisi (veya Gavel)
+      subItems: [
+        { title: "Toplantı Planla", icon: CalendarPlus, path: "/meetings/schedule" },
+        { title: "Toplantı Listesi", icon: List, path: "/meetings/list" },
+        { title: "Karar Defteri", icon: NotebookText, path: "/meetings/decisions" },
+        { title: "Gündem ve Tutanağa", icon: FileText, path: "/meetings/minutes" },
+      ],
+    },
+    
+    {
+      id: "managers",
+      title: "Yönetici İşlemleri",
+      icon: Wallpaper,
+      subItems: [
+        { title: "Yeni Yönetici Ekle", icon: UserPlus, path: "/managers/add" },
+        {
+          title: "Yöneticiler",
+          icon: Users2Icon,
+          path: "/managers/list",
+        },
+      ],
+    },
     {
       id: "events",
       title: "Etkinlik Yönetimi",
@@ -111,7 +156,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Etkinlik Listesi",
           icon: List,
           path: "/events/list",
-    
         },
         {
           title: "Katılım Takibi",
@@ -135,7 +179,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Planlanmış Paylaşımlar",
           icon: Clock,
           path: "/social/scheduled",
-
         },
         {
           title: "Analiz Raporları",
@@ -155,7 +198,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Borç Görüntüleme",
           icon: Eye,
           path: "/finance/debt-view",
-
         },
         { title: "Raporlar", icon: BarChart3, path: "/finance/reports" },
         { title: "Dışa Aktar", icon: Download, path: "/finance/export" },
@@ -175,7 +217,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           title: "Döküman Listesi",
           icon: List,
           path: "/documents/list",
-
         },
         {
           title: "Erişim İzinleri",
@@ -184,7 +225,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         },
       ],
     },
-  ];
+];
 
   const isActive = useCallback(
     (path: string): boolean => pathname === path,
