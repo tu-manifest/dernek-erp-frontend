@@ -14,6 +14,7 @@ import {
   User,
   CreditCard
 } from 'lucide-react';
+import useGetGroups from '../hooks/useGetGroups';
 
 interface Member {
   id: string;
@@ -23,20 +24,21 @@ interface Member {
   phoneNumber: string;
   email: string;
   address: string;
-  membershipType: string;
-  applicationDate: string;
-  duesAmount: string;
-  duesFrequency: string;
-  paymentStatus: string;
-  charterApproval: boolean;
-  kvkkApproval: boolean;
+  duesAmount: string; // Backend'den string olarak geliyor
+  duesFrequency: 'monthly' | 'quarterly' | 'annual';
+  paymentStatus: 'pending' | 'paid' | 'overdue';
+  group?: {
+    id: number;
+    group_name: string;
+    isActive: boolean;
+  };
+  group_id: number;
 }
 
 interface MemberTableProps {
   members?: Member[];
   onEdit?: (member: Member) => void;
   onDelete?: (memberId: string) => void;
-  onView?: (member: Member) => void;
 }
 
 const MemberTable: React.FC<MemberTableProps> = ({
@@ -50,66 +52,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
-  // Sample data for demonstration
-  const defaultMembers: Member[] = [
-    {
-      id: '1',
-      fullName: 'Ahmet Yılmaz',
-      tcNumber: '12345678901',
-      birthDate: '1985-06-15',
-      phoneNumber: '+90 555 123 45 67',
-      email: 'ahmet.yilmaz@email.com',
-      address: 'Kadıköy, İstanbul',
-      membershipType: 'active',
-      applicationDate: '2024-01-15',
-      duesAmount: '500',
-      duesFrequency: 'monthly',
-      paymentStatus: 'paid',
-      charterApproval: true,
-      kvkkApproval: true
-    },
-    {
-      id: '2',
-      fullName: 'Fatma Demir',
-      tcNumber: '98765432109',
-      birthDate: '1990-03-22',
-      phoneNumber: '+90 533 987 65 43',
-      email: 'fatma.demir@email.com',
-      address: 'Çankaya, Ankara',
-      membershipType: 'student',
-      applicationDate: '2024-02-10',
-      duesAmount: '250',
-      duesFrequency: 'quarterly',
-      paymentStatus: 'pending',
-      charterApproval: true,
-      kvkkApproval: true
-    },
-    {
-      id: '3',
-      fullName: 'Mehmet Kaya',
-      tcNumber: '11223344556',
-      birthDate: '1978-11-08',
-      phoneNumber: '+90 505 111 22 33',
-      email: 'mehmet.kaya@email.com',
-      address: 'Konak, İzmir',
-      membershipType: 'honorary',
-      applicationDate: '2023-12-05',
-      duesAmount: '1000',
-      duesFrequency: 'annual',
-      paymentStatus: 'overdue',
-      charterApproval: true,
-      kvkkApproval: true
-    }
-  ];
+  // Groups hook'unu kullan
+  const { groups, isLoading: groupsLoading, isError: groupsError } = useGetGroups();
 
-  const displayMembers = members.length > 0 ? members : defaultMembers;
+  const displayMembers = members.length > 0 ? members : [];
 
-  const membershipTypeLabels = {
-    active: 'Aktif Üye',
-    honorary: 'Onur Üyesi',
-    supporting: 'Destekleyici Üye',
-    student: 'Öğrenci Üyesi'
-  };
+
 
   const paymentStatusLabels = {
     pending: 'Beklemede',
@@ -129,7 +77,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
     annual: 'Yıllık'
   };
 
-  // Filter and search logic
+  // Filter and search logic - grup name'e göre filtreleme
   const filteredMembers = displayMembers
     .filter(member => {
       const matchesSearch = 
@@ -137,7 +85,10 @@ const MemberTable: React.FC<MemberTableProps> = ({
         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         member.phoneNumber.includes(searchTerm);
       
-      const matchesFilter = filterType === 'all' || member.membershipType === filterType;
+      // Grup name'e göre filtreleme
+      const matchesFilter = filterType === 'all' || 
+        member.group?.group_name === filterType ||
+        member.paymentStatus === filterType;
       
       return matchesSearch && matchesFilter;
     })
@@ -200,21 +151,41 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 placeholder="Üye ara..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2  w-full sm:w-64"
+                className="pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
               />
             </div>
             
-            {/* Filter */}
+            {/* Enhanced Filter with Groups */}
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={groupsLoading}
             >
-              <option value="all">Tüm Üyeler</option>
-              <option value="active">Aktif Üyeler</option>
-              <option value="student">Öğrenci Üyeleri</option>
-              <option value="honorary">Onur Üyeleri</option>
-              <option value="supporting">Destekleyici Üyeler</option>
+              <option value="all">
+                {groupsLoading ? 'Yükleniyor...' : 'Tüm Üyeler'}
+              </option>
+              
+              {/* Ödeme durumuna göre filtreleme */}
+              <optgroup label="Ödeme Durumuna Göre Filtrele">
+                <option value="pending">Ödemesi Beklemede Olanlar</option>
+                <option value="paid">Ödemesi Tamamlanmış</option>
+                <option value="overdue">Ödemesi Gecikmişler</option>
+              </optgroup>
+              
+              {/* Grupları dinamik olarak listele */}
+              {!groupsLoading && !groupsError && Array.isArray(groups) && groups.length > 0 && (
+                <>
+                  <optgroup label="Gruplara Göre Filtrele">
+                    {groups.map((group: any) => (
+                      <option key={group.id || group._id} value={group.groupName || group.group_name || group.name}>
+                        {group.groupName || group.group_name || group.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                </>
+              )}
+              
             </select>
             
             {/* Export Button */}
@@ -224,6 +195,13 @@ const MemberTable: React.FC<MemberTableProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Groups loading/error state */}
+        {groupsError && (
+          <div className="mt-3 p-2 bg-red-100 border border-red-300 rounded-lg">
+            <p className="text-red-700 text-sm">Gruplar yüklenirken hata oluştu</p>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -319,7 +297,7 @@ const MemberTable: React.FC<MemberTableProps> = ({
                 <td className="px-4 py-4">
                   <div className="font-medium text-gray-900">{member.fullName}</div>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-600 font-mono">
+                <td className="px-4 py-4 text-sm text-gray-600">
                   {member.tcNumber}
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">
@@ -329,37 +307,35 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   {member.phoneNumber}
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">
-                  <div className="truncate max-w-48" title={member.email}>
-                    {member.email}
-                  </div>
+                  {member.email}
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-600">
-                  <div className="truncate max-w-44" title={member.address}>
+                <td className="px-4 py-4 text-sm text-gray-600 max-w-48">
+                  <div className="truncate" title={member.address}>
                     {member.address}
                   </div>
                 </td>
                 <td className="px-4 py-4">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {membershipTypeLabels[member.membershipType as keyof typeof membershipTypeLabels]}
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-blue-800">
+                    {member.group?.group_name || 'Grup Yok'}
                   </span>
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">
-                  <div className="font-medium">₺{member.duesAmount}</div>
-                  <div className="text-xs text-gray-500">
-                    {duesFrequencyLabels[member.duesFrequency as keyof typeof duesFrequencyLabels]}
+                  <div>
+                    <div className="font-medium">{member.duesAmount} TL</div>
+                    <div className="text-xs text-gray-500">
+                      {duesFrequencyLabels[member.duesFrequency]}
+                    </div>
                   </div>
                 </td>
                 <td className="px-4 py-4">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    paymentStatusColors[member.paymentStatus as keyof typeof paymentStatusColors]
+                    paymentStatusColors[member.paymentStatus]
                   }`}>
-                    {paymentStatusLabels[member.paymentStatus as keyof typeof paymentStatusLabels]}
+                    {paymentStatusLabels[member.paymentStatus]}
                   </span>
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center justify-center space-x-2">
-                 
-                 
                     <button
                       onClick={() => onEdit?.(member)}
                       className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
