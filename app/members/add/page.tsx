@@ -1,8 +1,21 @@
-"use client"
-import React, { useState } from 'react';
-import { User, Phone, Mail, MapPin, Calendar, CreditCard, Upload, FileText, Shield, Check, Info
-} from 'lucide-react';
-import useGetGroups from '@/hooks/useGetGroups';
+"use client";
+import React, { useState } from "react";
+import {
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  CreditCard,
+  Upload,
+  FileText,
+  Shield,
+  Check,
+  Info,
+} from "lucide-react";
+import useGetGroups from "@/hooks/useGetGroups";
+import useAddNewMember from "@/hooks/useAddNewMember";
+import { toast } from "sonner";
 interface FormData {
   fullName: string;
   tcNumber: string;
@@ -12,6 +25,7 @@ interface FormData {
   address: string;
   membershipType: string;
   applicationDate: string;
+  additionalNotes: string;
   duesAmount: string;
   duesFrequency: string;
   paymentStatus: string;
@@ -32,48 +46,52 @@ interface SelectOption {
 
 const MembershipForm: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
-    fullName: '',
-    tcNumber: '',
-    birthDate: '',
-    phoneNumber: '',
-    email: '',
-    address: '',
-    membershipType: '',
-    applicationDate: new Date().toISOString().split('T')[0],
-    duesAmount: '',
-    duesFrequency: '',
-    paymentStatus: 'pending',
-    idCopyFile: null,
-    photoFile: null,
+    fullName: "",
+    tcNumber: "",
+    birthDate: "",
+    phoneNumber: "",
+    email: "",
+    address: "",
+    membershipType: "", // Örnek: 'basic', 'premium' veya 'student'
+    applicationDate: new Date().toISOString().split("T")[0], // YYYY-MM-DD
+    additionalNotes: "",
+    duesAmount: "",
+
+    duesFrequency: "",
+    paymentStatus: "pending",
+
+    idCopyFile: null, // Tip: File | null
+    photoFile: null, // Tip: File | null
+
     charterApproval: false,
-    kvkkApproval: false
+    kvkkApproval: false,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
 
   const duesFrequencies: SelectOption[] = [
-    { value: 'monthly', label: 'Aylık' },
-    { value: 'quarterly', label: 'Üç Aylık' },
-    { value: 'annual', label: 'Yıllık' }
+    { value: "monthly", label: "Aylık" },
+    { value: "quarterly", label: "Üç Aylık" },
+    { value: "annual", label: "Yıllık" },
   ];
 
   const paymentStatuses: SelectOption[] = [
-    { value: 'pending', label: 'Beklemede' },
-    { value: 'paid', label: 'Ödendi' },
-    { value: 'overdue', label: 'Gecikmiş' }
+    { value: "pending", label: "Beklemede" },
+    { value: "paid", label: "Ödendi" },
+    { value: "overdue", label: "Gecikmiş" },
   ];
 
   const validateTCNumber = (tc: string): boolean => {
     if (!tc || tc.length !== 11) return false;
     if (!/^\d+$/.test(tc)) return false;
-    if (tc[0] === '0') return false;
-    
-    const digits = tc.split('').map(Number);
+    if (tc[0] === "0") return false;
+
+    const digits = tc.split("").map(Number);
     const sum1 = digits[0] + digits[2] + digits[4] + digits[6] + digits[8];
     const sum2 = digits[1] + digits[3] + digits[5] + digits[7];
     const check1 = (sum1 * 7 - sum2) % 10;
     const check2 = (sum1 + sum2 + digits[9]) % 10;
-    
+
     return check1 === digits[9] && check2 === digits[10];
   };
 
@@ -92,8 +110,11 @@ const MembershipForm: React.FC = () => {
     const birth = new Date(birthDate);
     const age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
       return age - 1 >= 18;
     }
     return age >= 18;
@@ -107,51 +128,57 @@ const MembershipForm: React.FC = () => {
     return allowedTypes.includes(file.type);
   };
 
-  const handleInputChange = (field: keyof FormData, value: string | boolean): void => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
+  const handleInputChange = (
+    field: keyof FormData,
+    value: string | boolean
+  ): void => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
-  const handleFileChange = (field: 'idCopyFile' | 'photoFile', file: File | null): void => {
+  const handleFileChange = (
+    field: "idCopyFile" | "photoFile",
+    file: File | null
+  ): void => {
     if (file) {
       const newErrors: FormErrors = { ...errors };
-      
+
       // File type validation
-      if (field === 'idCopyFile') {
-        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg'];
+      if (field === "idCopyFile") {
+        const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg"];
         if (!validateFileType(file, allowedTypes)) {
-          newErrors[field] = 'Sadece PDF veya JPEG dosyaları kabul edilir';
+          newErrors[field] = "Sadece PDF veya JPEG dosyaları kabul edilir";
           setErrors(newErrors);
           return;
         }
-      } else if (field === 'photoFile') {
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      } else if (field === "photoFile") {
+        const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
         if (!validateFileType(file, allowedTypes)) {
-          newErrors[field] = 'Sadece JPEG veya PNG dosyaları kabul edilir';
+          newErrors[field] = "Sadece JPEG veya PNG dosyaları kabul edilir";
           setErrors(newErrors);
           return;
         }
       }
-      
+
       // File size validation (5MB max)
       if (!validateFileSize(file, 5)) {
-        newErrors[field] = 'Dosya boyutu 5MB\'dan küçük olmalıdır';
+        newErrors[field] = "Dosya boyutu 5MB'dan küçük olmalıdır";
         setErrors(newErrors);
         return;
       }
-      
+
       // Clear error if validation passes
       if (newErrors[field]) {
         delete newErrors[field];
         setErrors(newErrors);
       }
     }
-    
-    setFormData(prev => ({ ...prev, [field]: file }));
+
+    setFormData((prev) => ({ ...prev, [field]: file }));
   };
 
   const validateForm = (): boolean => {
@@ -159,107 +186,144 @@ const MembershipForm: React.FC = () => {
 
     // Required field validations
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Ad ve soyad gereklidir';
+      newErrors.fullName = "Ad ve soyad gereklidir";
     } else if (formData.fullName.trim().length < 3) {
-      newErrors.fullName = 'Ad ve soyad en az 3 karakter olmalıdır';
+      newErrors.fullName = "Ad ve soyad en az 3 karakter olmalıdır";
     }
 
     if (!formData.tcNumber) {
-      newErrors.tcNumber = 'T.C. kimlik numarası gereklidir';
+      newErrors.tcNumber = "T.C. kimlik numarası gereklidir";
     } else if (!validateTCNumber(formData.tcNumber)) {
-      newErrors.tcNumber = 'Geçerli bir T.C. kimlik numarası giriniz';
+      newErrors.tcNumber = "Geçerli bir T.C. kimlik numarası giriniz";
     }
 
     if (!formData.birthDate) {
-      newErrors.birthDate = 'Doğum tarihi gereklidir';
+      newErrors.birthDate = "Doğum tarihi gereklidir";
     } else if (!validateAge(formData.birthDate)) {
-      newErrors.birthDate = 'Üye olmak için en az 18 yaşında olmalısınız';
+      newErrors.birthDate = "Üye olmak için en az 18 yaşında olmalısınız";
     }
 
     if (!formData.phoneNumber) {
-      newErrors.phoneNumber = 'Telefon numarası gereklidir';
+      newErrors.phoneNumber = "Telefon numarası gereklidir";
     } else if (!validatePhone(formData.phoneNumber)) {
-      newErrors.phoneNumber = 'Geçerli bir telefon numarası giriniz (+90 formatında)';
+      newErrors.phoneNumber =
+        "Geçerli bir telefon numarası giriniz (+90 formatında)";
     }
 
     if (!formData.email) {
-      newErrors.email = 'E-posta adresi gereklidir';
+      newErrors.email = "E-posta adresi gereklidir";
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Geçerli bir e-posta adresi giriniz';
+      newErrors.email = "Geçerli bir e-posta adresi giriniz";
     }
 
     if (!formData.address.trim()) {
-      newErrors.address = 'Adres bilgisi gereklidir';
+      newErrors.address = "Adres bilgisi gereklidir";
     } else if (formData.address.trim().length < 10) {
-      newErrors.address = 'Adres en az 10 karakter olmalıdır';
+      newErrors.address = "Adres en az 10 karakter olmalıdır";
     }
 
     if (!formData.membershipType) {
-      newErrors.membershipType = 'Üyelik türü seçiniz';
+      newErrors.membershipType = "Üyelik türü seçiniz";
     }
 
     if (!formData.duesAmount) {
-      newErrors.duesAmount = 'Aidat miktarı gereklidir';
+      newErrors.duesAmount = "Aidat miktarı gereklidir";
     } else if (parseFloat(formData.duesAmount) <= 0) {
-      newErrors.duesAmount = 'Aidat miktarı 0\'dan büyük olmalıdır';
+      newErrors.duesAmount = "Aidat miktarı 0'dan büyük olmalıdır";
     }
 
     if (!formData.duesFrequency) {
-      newErrors.duesFrequency = 'Ödeme sıklığı seçiniz';
+      newErrors.duesFrequency = "Ödeme sıklığı seçiniz";
     }
 
     if (!formData.paymentStatus) {
-      newErrors.paymentStatus = 'Ödeme durumu seçiniz';
+      newErrors.paymentStatus = "Ödeme durumu seçiniz";
     }
 
     if (!formData.idCopyFile) {
-      newErrors.idCopyFile = 'Kimlik fotokopisi yüklemesi gereklidir';
+      newErrors.idCopyFile = "Kimlik fotokopisi yüklemesi gereklidir";
     }
 
     if (!formData.photoFile) {
-      newErrors.photoFile = 'Vesikalık fotoğraf yüklemesi gereklidir';
+      newErrors.photoFile = "Vesikalık fotoğraf yüklemesi gereklidir";
     }
 
     if (!formData.charterApproval) {
-      newErrors.charterApproval = 'Dernek tüzüğünü kabul etmelisiniz';
+      newErrors.charterApproval = "Dernek tüzüğünü kabul etmelisiniz";
     }
 
     if (!formData.kvkkApproval) {
-      newErrors.kvkkApproval = 'KVKK onayı gereklidir';
+      newErrors.kvkkApproval = "KVKK onayı gereklidir";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (): void => {
+  const { addNewMember, error } = useAddNewMember();
+
+  const handleSubmit = async (): Promise<void> => {
     if (validateForm()) {
-      console.log('Form başarıyla gönderildi:', formData);
-      alert('Üyelik başvurunuz başarıyla alındı!');
-      // Reset form
-      setFormData({
-        fullName: '',
-        tcNumber: '',
-        birthDate: '',
-        phoneNumber: '',
-        email: '',
-        address: '',
-        membershipType: '',
-        applicationDate: new Date().toISOString().split('T')[0],
-        duesAmount: '',
-        duesFrequency: '',
-        paymentStatus: 'pending',
-        idCopyFile: null,
-        photoFile: null,
-        charterApproval: false,
-        kvkkApproval: false
-      });
-      setErrors({});
+      try {
+        // membershipType'ı group_id'ye dönüştürüp API'nin beklediği formata çevir
+        const submitData = {
+          fullName: formData.fullName,
+          tcNumber: formData.tcNumber,
+          birthDate: formData.birthDate,
+          phoneNumber: formData.phoneNumber,
+          email: formData.email,
+          additionalNotes: formData.additionalNotes,
+          address: formData.address,
+          group_id: parseInt(formData.membershipType), // membershipType'ı group_id olarak gönder
+          duesAmount: parseFloat(formData.duesAmount),
+          duesFrequency: formData.duesFrequency as
+            | "monthly"
+            | "quarterly"
+            | "annual",
+          paymentStatus: formData.paymentStatus as
+            | "paid"
+            | "pending"
+            | "overdue",
+          charterApproval: formData.charterApproval,
+          kvkkApproval: formData.kvkkApproval,
+        };
+
+        console.log("Form gönderiliyor:", submitData);
+
+        const result = await addNewMember(submitData);
+
+        console.log("Üye başarıyla eklendi:", result);
+        alert("Üye başarıyla eklendi!");
+
+        // Form'u sıfırla
+        setFormData({
+          additionalNotes: "",
+          fullName: "",
+          tcNumber: "",
+          birthDate: "",
+          phoneNumber: "",
+          email: "",
+          address: "",
+          membershipType: "",
+          applicationDate: new Date().toISOString().split("T")[0],
+          duesAmount: "",
+          duesFrequency: "",
+          paymentStatus: "pending",
+          idCopyFile: null,
+          photoFile: null,
+          charterApproval: false,
+          kvkkApproval: false,
+        });
+        setErrors({});
+      } catch (error) {
+        console.error("Üye ekleme hatası:", error);
+        alert("Üye eklenirken bir hata oluştu: " + (error as Error).message);
+      }
     }
   };
 
   const { groups, isLoading, isError } = useGetGroups();
-  console.log('Fetched groups:', groups);
+  console.log("Fetched groups:", groups);
 
   return (
     <div className="min-h-screen py-16 px-6 lg:px-12 bg-gray-100">
@@ -272,7 +336,7 @@ const MembershipForm: React.FC = () => {
                 <User className="mr-3 text-blue-600" size={28} />
                 Kişisel Bilgiler
               </h2>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
                   <label className="block text-base font-medium text-gray-700 mb-3">
@@ -281,13 +345,19 @@ const MembershipForm: React.FC = () => {
                   <input
                     type="text"
                     value={formData.fullName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('fullName', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleInputChange("fullName", e.target.value)
+                    }
                     className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.fullName ? 'border-red-500' : 'border-gray-300'
+                      errors.fullName ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="Adınız ve soyadınız"
                   />
-                  {errors.fullName && <p className="text-red-500 text-sm mt-2">{errors.fullName}</p>}
+                  {errors.fullName && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.fullName}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -297,14 +367,20 @@ const MembershipForm: React.FC = () => {
                   <input
                     type="text"
                     value={formData.tcNumber}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('tcNumber', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleInputChange("tcNumber", e.target.value)
+                    }
                     maxLength={11}
                     className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.tcNumber ? 'border-red-500' : 'border-gray-300'
+                      errors.tcNumber ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="12345678901"
                   />
-                  {errors.tcNumber && <p className="text-red-500 text-sm mt-2">{errors.tcNumber}</p>}
+                  {errors.tcNumber && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.tcNumber}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -312,55 +388,78 @@ const MembershipForm: React.FC = () => {
                     Doğum Tarihi <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-4 top-4 text-gray-400" size={24} />
+                    <Calendar
+                      className="absolute left-4 top-4 text-gray-400"
+                      size={24}
+                    />
                     <input
                       type="date"
                       value={formData.birthDate}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('birthDate', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        handleInputChange("birthDate", e.target.value)
+                      }
                       className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                        errors.birthDate ? 'border-red-500' : 'border-gray-300'
+                        errors.birthDate ? "border-red-500" : "border-gray-300"
                       }`}
                     />
                   </div>
-                  {errors.birthDate && <p className="text-red-500 text-sm mt-2">{errors.birthDate}</p>}
+                  {errors.birthDate && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.birthDate}
+                    </p>
+                  )}
                 </div>
 
-             <div>
+                <div>
                   <label className="block text-base font-medium text-gray-700 mb-3">
                     Üyelik Türü <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.membershipType}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('membershipType', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      handleInputChange("membershipType", e.target.value)
+                    }
                     className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.membershipType ? 'border-red-500' : 'border-gray-300'
+                      errors.membershipType
+                        ? "border-red-500"
+                        : "border-gray-300"
                     }`}
                     disabled={isLoading}
                   >
                     <option value="">
-                      {isLoading ? 'Yükleniyor...' : 'Üyelik türü seçiniz'}
+                      {isLoading ? "Yükleniyor..." : "Üyelik türü seçiniz"}
                     </option>
                     {isError && (
                       <option value="" disabled>
                         Gruplar yüklenirken hata oluştu
                       </option>
                     )}
-                    {Array.isArray(groups) && groups.length > 0 ? (
-                      groups.map((group: any) => (
-                        <option key={group.id || group._id} value={group.id || group._id}>
-                          {group.groupName || group.group_name || group.name}
-                        </option>
-                      ))
-                    ) : (
-                      !isLoading && !isError && (
-                        <option value="" disabled>
-                          Henüz grup bulunamadı
-                        </option>
-                      )
-                    )}
+                    {Array.isArray(groups) && groups.length > 0
+                      ? groups.map((group: any) => (
+                          <option
+                            key={group.id || group._id}
+                            value={group.id || group._id}
+                          >
+                            {group.groupName || group.group_name || group.name}
+                          </option>
+                        ))
+                      : !isLoading &&
+                        !isError && (
+                          <option value="" disabled>
+                            Henüz grup bulunamadı
+                          </option>
+                        )}
                   </select>
-                  {errors.membershipType && <p className="text-red-500 text-sm mt-2">{errors.membershipType}</p>}
-                  {isError && <p className="text-red-500 text-sm mt-2">Gruplar yüklenirken hata oluştu</p>}
+                  {errors.membershipType && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.membershipType}
+                    </p>
+                  )}
+                  {isError && (
+                    <p className="text-red-500 text-sm mt-2">
+                      Gruplar yüklenirken hata oluştu
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -371,25 +470,36 @@ const MembershipForm: React.FC = () => {
                 <Phone className="mr-3 text-blue-600" size={28} />
                 İletişim Bilgileri
               </h2>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
                   <label className="block text-base font-medium text-gray-700 mb-3">
                     Telefon Numarası <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-4 top-4 text-gray-400" size={24} />
+                    <Phone
+                      className="absolute left-4 top-4 text-gray-400"
+                      size={24}
+                    />
                     <input
                       type="text"
                       value={formData.phoneNumber}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('phoneNumber', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        handleInputChange("phoneNumber", e.target.value)
+                      }
                       className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                        errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                        errors.phoneNumber
+                          ? "border-red-500"
+                          : "border-gray-300"
                       }`}
                       placeholder="+90 555 123 45 67"
                     />
                   </div>
-                  {errors.phoneNumber && <p className="text-red-500 text-sm mt-2">{errors.phoneNumber}</p>}
+                  {errors.phoneNumber && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.phoneNumber}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -397,18 +507,25 @@ const MembershipForm: React.FC = () => {
                     E-posta Adresi <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-4 text-gray-400" size={24} />
+                    <Mail
+                      className="absolute left-4 top-4 text-gray-400"
+                      size={24}
+                    />
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('email', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        handleInputChange("email", e.target.value)
+                      }
                       className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                        errors.email ? 'border-red-500' : 'border-gray-300'
+                        errors.email ? "border-red-500" : "border-gray-300"
                       }`}
                       placeholder="ornek@email.com"
                     />
                   </div>
-                  {errors.email && <p className="text-red-500 text-sm mt-2">{errors.email}</p>}
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-2">{errors.email}</p>
+                  )}
                 </div>
 
                 <div className="lg:col-span-2">
@@ -416,18 +533,27 @@ const MembershipForm: React.FC = () => {
                     Adres <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-4 top-4 text-gray-400" size={24} />
+                    <MapPin
+                      className="absolute left-4 top-4 text-gray-400"
+                      size={24}
+                    />
                     <textarea
                       value={formData.address}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('address', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        handleInputChange("address", e.target.value)
+                      }
                       rows={4}
                       className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base resize-none ${
-                        errors.address ? 'border-red-500' : 'border-gray-300'
+                        errors.address ? "border-red-500" : "border-gray-300"
                       }`}
                       placeholder="Tam adresinizi yazınız (en azından şehir/ilçe bilgisi)"
                     />
                   </div>
-                  {errors.address && <p className="text-red-500 text-sm mt-2">{errors.address}</p>}
+                  {errors.address && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.address}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -438,10 +564,12 @@ const MembershipForm: React.FC = () => {
                 <CreditCard className="mr-3 text-blue-600" size={28} />
                 Üyelik Detayları
               </h2>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-base font-medium text-gray-700 mb-3">Başvuru Tarihi</label>
+                  <label className="block text-base font-medium text-gray-700 mb-3">
+                    Başvuru Tarihi
+                  </label>
                   <input
                     type="date"
                     value={formData.applicationDate}
@@ -457,14 +585,20 @@ const MembershipForm: React.FC = () => {
                   <input
                     type="number"
                     value={formData.duesAmount}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('duesAmount', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleInputChange("duesAmount", e.target.value)
+                    }
                     className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.duesAmount ? 'border-red-500' : 'border-gray-300'
+                      errors.duesAmount ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="0"
                     min="0"
                   />
-                  {errors.duesAmount && <p className="text-red-500 text-sm mt-2">{errors.duesAmount}</p>}
+                  {errors.duesAmount && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.duesAmount}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -473,17 +607,27 @@ const MembershipForm: React.FC = () => {
                   </label>
                   <select
                     value={formData.duesFrequency}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('duesFrequency', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      handleInputChange("duesFrequency", e.target.value)
+                    }
                     className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.duesFrequency ? 'border-red-500' : 'border-gray-300'
+                      errors.duesFrequency
+                        ? "border-red-500"
+                        : "border-gray-300"
                     }`}
                   >
                     <option value="">Seçiniz</option>
                     {duesFrequencies.map((freq: SelectOption) => (
-                      <option key={freq.value} value={freq.value}>{freq.label}</option>
+                      <option key={freq.value} value={freq.value}>
+                        {freq.label}
+                      </option>
                     ))}
                   </select>
-                  {errors.duesFrequency && <p className="text-red-500 text-sm mt-2">{errors.duesFrequency}</p>}
+                  {errors.duesFrequency && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.duesFrequency}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -492,40 +636,57 @@ const MembershipForm: React.FC = () => {
                   </label>
                   <select
                     value={formData.paymentStatus}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleInputChange('paymentStatus', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      handleInputChange("paymentStatus", e.target.value)
+                    }
                     className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.paymentStatus ? 'border-red-500' : 'border-gray-300'
+                      errors.paymentStatus
+                        ? "border-red-500"
+                        : "border-gray-300"
                     }`}
                   >
                     {paymentStatuses.map((status: SelectOption) => (
-                      <option key={status.value} value={status.value}>{status.label}</option>
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
                     ))}
                   </select>
-                  {errors.paymentStatus && <p className="text-red-500 text-sm mt-2">{errors.paymentStatus}</p>}
+                  {errors.paymentStatus && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.paymentStatus}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
-             {/* Membership Details Section */}
+            {/* Membership Details Section */}
             <div className="bg-gray-50 rounded-2xl p-8">
               <h2 className="text-2xl font-semibold text-gray-800 mb-8 flex items-center">
                 <Info className="mr-3 text-blue-600" size={28} />
                 Ekstra Bilgi
               </h2>
               <div className="lg:col-span-2">
-                  <div>
-                    <textarea
-                      value={formData.address}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('address', e.target.value)}
-                      rows={4}
-                      className={`w-full pl-3 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base resize-none ${
-                        errors.address ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Ekstra bilgi varsa buraya yazabilirsiniz..."
-                    />
-                  </div>
-                  {errors.address && <p className="text-red-500 text-sm mt-2">{errors.address}</p>}
+                <div>
+                  <textarea
+                    value={formData.additionalNotes}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                      handleInputChange("additionalNotes", e.target.value)
+                    }
+                    rows={4}
+                    className={`w-full pl-3 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base resize-none ${
+                      errors.additionalNotes
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                    placeholder="Ekstra bilgi varsa buraya yazabilirsiniz..."
+                  />
                 </div>
-              
+                {errors.additionalNotes && (
+                  <p className="text-red-500 text-sm mt-2">
+                    {errors.additionalNotes}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* File Upload Section */}
@@ -534,56 +695,88 @@ const MembershipForm: React.FC = () => {
                 <Upload className="mr-3 text-blue-600" size={28} />
                 Belge Yüklemeleri
               </h2>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
                   <label className="block text-base font-medium text-gray-700 mb-3">
-                    Kimlik Fotokopisi <span className="text-red-500">*</span> <span className="text-gray-500">(PDF/JPEG, max 5MB)</span>
+                    Kimlik Fotokopisi <span className="text-red-500">*</span>{" "}
+                    <span className="text-gray-500">(PDF/JPEG, max 5MB)</span>
                   </label>
-                  <div className={`border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors ${
-                    errors.idCopyFile ? 'border-red-500' : 'border-gray-300'
-                  }`}>
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors ${
+                      errors.idCopyFile ? "border-red-500" : "border-gray-300"
+                    }`}
+                  >
                     <Upload className="mx-auto text-gray-400 mb-3" size={36} />
                     <input
                       type="file"
                       accept=".pdf,.jpeg,.jpg"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange('idCopyFile', e.target.files?.[0] || null)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        handleFileChange(
+                          "idCopyFile",
+                          e.target.files?.[0] || null
+                        )
+                      }
                       className="hidden"
                       id="idCopy"
                     />
                     <label htmlFor="idCopy" className="cursor-pointer">
-                      <span className="text-blue-600 hover:text-blue-700 text-base">Dosya seçiniz</span>
+                      <span className="text-blue-600 hover:text-blue-700 text-base">
+                        Dosya seçiniz
+                      </span>
                       {formData.idCopyFile && (
-                        <p className="text-sm text-gray-600 mt-3">{formData.idCopyFile.name}</p>
+                        <p className="text-sm text-gray-600 mt-3">
+                          {formData.idCopyFile.name}
+                        </p>
                       )}
                     </label>
                   </div>
-                  {errors.idCopyFile && <p className="text-red-500 text-sm mt-2">{errors.idCopyFile}</p>}
+                  {errors.idCopyFile && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.idCopyFile}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-base font-medium text-gray-700 mb-3">
-                    Vesikalık Fotoğraf <span className="text-red-500">*</span> <span className="text-gray-500">(JPEG/PNG, max 5MB)</span>
+                    Vesikalık Fotoğraf <span className="text-red-500">*</span>{" "}
+                    <span className="text-gray-500">(JPEG/PNG, max 5MB)</span>
                   </label>
-                  <div className={`border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors ${
-                    errors.photoFile ? 'border-red-500' : 'border-gray-300'
-                  }`}>
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors ${
+                      errors.photoFile ? "border-red-500" : "border-gray-300"
+                    }`}
+                  >
                     <Upload className="mx-auto text-gray-400 mb-3" size={36} />
                     <input
                       type="file"
                       accept=".jpeg,.jpg,.png"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFileChange('photoFile', e.target.files?.[0] || null)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        handleFileChange(
+                          "photoFile",
+                          e.target.files?.[0] || null
+                        )
+                      }
                       className="hidden"
                       id="photo"
                     />
                     <label htmlFor="photo" className="cursor-pointer">
-                      <span className="text-blue-600 hover:text-blue-700 text-base">Dosya seçiniz</span>
+                      <span className="text-blue-600 hover:text-blue-700 text-base">
+                        Dosya seçiniz
+                      </span>
                       {formData.photoFile && (
-                        <p className="text-sm text-gray-600 mt-3">{formData.photoFile.name}</p>
+                        <p className="text-sm text-gray-600 mt-3">
+                          {formData.photoFile.name}
+                        </p>
                       )}
                     </label>
                   </div>
-                  {errors.photoFile && <p className="text-red-500 text-sm mt-2">{errors.photoFile}</p>}
+                  {errors.photoFile && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.photoFile}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -594,24 +787,34 @@ const MembershipForm: React.FC = () => {
                 <Shield className="mr-3 text-blue-600" size={28} />
                 Onaylar
               </h2>
-              
+
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
                   <input
                     type="checkbox"
                     id="charterApproval"
                     checked={formData.charterApproval}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('charterApproval', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleInputChange("charterApproval", e.target.checked)
+                    }
                     className="mt-1 w-6 h-6 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <div>
-                    <label htmlFor="charterApproval" className="text-base font-medium text-gray-700">
-                      Dernek Tüzüğü Onayı <span className="text-red-500">*</span>
+                    <label
+                      htmlFor="charterApproval"
+                      className="text-base font-medium text-gray-700"
+                    >
+                      Dernek Tüzüğü Onayı{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-gray-600 mt-2">
                       Dernek tüzüğünü okuduğumu ve kabul ettiğimi beyan ederim.
                     </p>
-                    {errors.charterApproval && <p className="text-red-500 text-sm mt-2">{errors.charterApproval}</p>}
+                    {errors.charterApproval && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.charterApproval}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -620,17 +823,27 @@ const MembershipForm: React.FC = () => {
                     type="checkbox"
                     id="kvkkApproval"
                     checked={formData.kvkkApproval}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('kvkkApproval', e.target.checked)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleInputChange("kvkkApproval", e.target.checked)
+                    }
                     className="mt-1 w-6 h-6 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <div>
-                    <label htmlFor="kvkkApproval" className="text-base font-medium text-gray-700">
+                    <label
+                      htmlFor="kvkkApproval"
+                      className="text-base font-medium text-gray-700"
+                    >
                       KVKK Onayı <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-gray-600 mt-2">
-                      Kişisel verilerimin KVKK kapsamında işlenmesine onay veriyorum.
+                      Kişisel verilerimin KVKK kapsamında işlenmesine onay
+                      veriyorum.
                     </p>
-                    {errors.kvkkApproval && <p className="text-red-500 text-sm mt-2">{errors.kvkkApproval}</p>}
+                    {errors.kvkkApproval && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.kvkkApproval}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -639,7 +852,11 @@ const MembershipForm: React.FC = () => {
             {/* Submit Button */}
             <div className="flex justify-center pt-8">
               <button
-                onClick={handleSubmit}
+                onClick={() => {
+                  handleSubmit();
+
+                  toast.success("Üye başarıyla eklendi!");
+                }}
                 className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-16 py-4 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-800 transform hover:scale-105 transition-all duration-200 shadow-lg flex items-center space-x-3"
               >
                 <Check size={28} />

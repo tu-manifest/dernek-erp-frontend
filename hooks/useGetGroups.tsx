@@ -13,11 +13,6 @@ export default function useGetGroups() {
     }
   );
 
-  // Debug için konsola yazdır
-  console.log('API Response Data:', data);
-  console.log('Data type:', typeof data);
-  console.log('Is Array:', Array.isArray(data));
-
   // API response'unu kontrol et ve güvenli array döndür
   let groups = [];
   if (data) {
