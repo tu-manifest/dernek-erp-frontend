@@ -51,6 +51,24 @@ const MemberTable: React.FC<MemberTableProps> = ({
   const [sortField, setSortField] = useState<keyof Member>('fullName');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  
+  // Sütun genişlikleri için state
+  const [columnWidths, setColumnWidths] = useState({
+    fullName: 200,
+    tcNumber: 130,
+    birthDate: 120,
+    phoneNumber: 160,
+    email: 200,
+    address: 180,
+    groupType: 140,
+    duesAmount: 100,
+    duesFrequency: 120, // Yeni sütun
+    paymentStatus: 120
+  });
+  
+  const [resizing, setResizing] = useState<string | null>(null);
+  const [startX, setStartX] = useState(0);
+  const [startWidth, setStartWidth] = useState(0);
 
   // Groups hook'unu kullan
   const { groups, isLoading: groupsLoading, isError: groupsError } = useGetGroups();
@@ -132,8 +150,69 @@ const MemberTable: React.FC<MemberTableProps> = ({
     return new Date(dateString).toLocaleDateString('tr-TR');
   };
 
+  // Resize fonksiyonları
+  const handleMouseDown = (e: React.MouseEvent, column: string) => {
+    setResizing(column);
+    setStartX(e.clientX);
+    setStartWidth(columnWidths[column as keyof typeof columnWidths]);
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!resizing) return;
+    
+    const diff = e.clientX - startX;
+    const newWidth = Math.max(50, startWidth + diff); // Minimum 50px
+    
+    setColumnWidths(prev => ({
+      ...prev,
+      [resizing]: newWidth
+    }));
+  };
+
+  const handleMouseUp = () => {
+    setResizing(null);
+  };
+
+  // Mouse events için useEffect
+  React.useEffect(() => {
+    if (resizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [resizing, startX, startWidth]);
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      {/* CSS for resizable columns */}
+      <style jsx>{`
+        .resizing {
+          user-select: none;
+        }
+        
+        .resize-handle:hover {
+          background-color: #3b82f6;
+        }
+        
+        .resize-handle {
+          transition: background-color 0.2s;
+        }
+        
+        table {
+          table-layout: fixed;
+          width: 100%;
+        }
+        
+        .truncate {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      `}</style>
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -217,8 +296,11 @@ const MemberTable: React.FC<MemberTableProps> = ({
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
               </th>
+              
+              {/* Ad Soyad - Resizable */}
               <th 
-                className="w-48 px-4 py-4 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors relative border-r border-gray-200"
+                style={{ width: columnWidths.fullName }}
                 onClick={() => handleSort('fullName')}
               >
                 <div className="flex items-center space-x-2">
@@ -230,49 +312,139 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     </span>
                   )}
                 </div>
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'fullName')}
+                />
               </th>
-              <th className="w-32 px-4 py-4 text-left text-sm font-semibold text-gray-700">
-                T.C. No
-              </th>
+              
+              {/* T.C. No - Resizable */}
               <th 
-                className="w-32 px-4 py-4 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 relative border-r border-gray-200"
+                style={{ width: columnWidths.tcNumber }}
+              >
+                T.C. No
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'tcNumber')}
+                />
+              </th>
+              
+              {/* Doğum Tarihi - Resizable */}
+              <th 
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors relative border-r border-gray-200"
+                style={{ width: columnWidths.birthDate }}
                 onClick={() => handleSort('birthDate')}
               >
                 <div className="flex items-center space-x-2">
                   <Calendar size={16} />
                   <span>Doğum Tarihi</span>
                 </div>
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'birthDate')}
+                />
               </th>
-              <th className="w-40 px-4 py-4 text-left text-sm font-semibold text-gray-700">
+              
+              {/* Telefon - Resizable */}
+              <th 
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 relative border-r border-gray-200"
+                style={{ width: columnWidths.phoneNumber }}
+              >
                 <div className="flex items-center space-x-2">
                   <Phone size={16} />
                   <span>Telefon</span>
                 </div>
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'phoneNumber')}
+                />
               </th>
-              <th className="w-52 px-4 py-4 text-left text-sm font-semibold text-gray-700">
+              
+              {/* E-posta - Resizable */}
+              <th 
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 relative border-r border-gray-200"
+                style={{ width: columnWidths.email }}
+              >
                 <div className="flex items-center space-x-2">
                   <Mail size={16} />
                   <span>E-posta</span>
                 </div>
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'email')}
+                />
               </th>
-              <th className="w-48 px-4 py-4 text-left text-sm font-semibold text-gray-700">
+              
+              {/* Adres - Resizable */}
+              <th 
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 relative border-r border-gray-200"
+                style={{ width: columnWidths.address }}
+              >
                 <div className="flex items-center space-x-2">
                   <MapPin size={16} />
                   <span>Adres</span>
                 </div>
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'address')}
+                />
               </th>
-              <th className="w-32 px-4 py-4 text-left text-sm font-semibold text-gray-700">
+              
+              {/* Üyelik Türü - Resizable */}
+              <th 
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 relative border-r border-gray-200"
+                style={{ width: columnWidths.groupType }}
+              >
                 Üyelik Türü
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'groupType')}
+                />
               </th>
-              <th className="w-28 px-4 py-4 text-left text-sm font-semibold text-gray-700">
+              
+              {/* Aidat - Resizable */}
+              <th 
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 relative border-r border-gray-200"
+                style={{ width: columnWidths.duesAmount }}
+              >
                 <div className="flex items-center space-x-2">
                   <CreditCard size={16} />
                   <span>Aidat</span>
                 </div>
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'duesAmount')}
+                />
               </th>
-              <th className="w-32 px-4 py-4 text-left text-sm font-semibold text-gray-700">
+              
+              {/* Ödeme Sıklığı - Yeni Sütun - Resizable */}
+              <th 
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 relative border-r border-gray-200"
+                style={{ width: columnWidths.duesFrequency }}
+              >
+                <div className="flex items-center space-x-2">
+                  <Calendar size={16} />
+                  <span>Ödeme Sıklığı</span>
+                </div>
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'duesFrequency')}
+                />
+              </th>
+              
+              {/* Ödeme Durumu - Resizable */}
+              <th 
+                className="px-4 py-4 text-left text-sm font-semibold text-gray-700 relative border-r border-gray-200"
+                style={{ width: columnWidths.paymentStatus }}
+              >
                 Ödeme Durumu
+                <div 
+                  className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                  onMouseDown={(e) => handleMouseDown(e, 'paymentStatus')}
+                />
               </th>
+              
               <th className="w-32 px-4 py-4 text-center text-sm font-semibold text-gray-700">
                 İşlemler
               </th>
@@ -294,46 +466,84 @@ const MemberTable: React.FC<MemberTableProps> = ({
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                 </td>
-                <td className="px-4 py-4">
-                  <div className="font-medium text-gray-900">{member.fullName}</div>
+                
+                {/* Ad Soyad */}
+                <td className="px-4 py-4 border-r border-gray-200" style={{ width: columnWidths.fullName }}>
+                  <div className="font-medium text-gray-900 truncate" title={member.fullName}>
+                    {member.fullName}
+                  </div>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-600">
-                  {member.tcNumber}
+                
+                {/* T.C. No */}
+                <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200" style={{ width: columnWidths.tcNumber }}>
+                  <div className="truncate" title={member.tcNumber}>
+                    {member.tcNumber}
+                  </div>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-600">
+                
+                {/* Doğum Tarihi */}
+                <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200" style={{ width: columnWidths.birthDate }}>
                   {formatDate(member.birthDate)}
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-600">
-                  {member.phoneNumber}
+                
+                {/* Telefon */}
+                <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200" style={{ width: columnWidths.phoneNumber }}>
+                  <div className="truncate" title={member.phoneNumber}>
+                    {member.phoneNumber}
+                  </div>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-600">
-                  {member.email}
+                
+                {/* E-posta */}
+                <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200" style={{ width: columnWidths.email }}>
+                  <div className="truncate" title={member.email}>
+                    {member.email}
+                  </div>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-600 max-w-48">
+                
+                {/* Adres */}
+                <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200" style={{ width: columnWidths.address }}>
                   <div className="truncate" title={member.address}>
                     {member.address}
                   </div>
                 </td>
-                <td className="px-4 py-4">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-blue-800">
-                    {member.group?.group_name || 'Grup Yok'}
+                
+                {/* Üyelik Türü */}
+                <td className="px-4 py-4 border-r border-gray-200" style={{ width: columnWidths.groupType }}>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <div className="truncate" title={member.group?.group_name || 'Grup Yok'}>
+                      {member.group?.group_name || 'Grup Yok'}
+                    </div>
                   </span>
                 </td>
-                <td className="px-4 py-4 text-sm text-gray-600">
-                  <div>
-                    <div className="font-medium">{member.duesAmount} TL</div>
-                    <div className="text-xs text-gray-500">
-                      {duesFrequencyLabels[member.duesFrequency]}
-                    </div>
+                
+                {/* Aidat */}
+                <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200" style={{ width: columnWidths.duesAmount }}>
+                  <div className="font-medium truncate" title={`${member.duesAmount} TL`}>
+                    ₺{member.duesAmount}
                   </div>
                 </td>
-                <td className="px-4 py-4">
+                
+                {/* Ödeme Sıklığı - Yeni Sütun */}
+                <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200" style={{ width: columnWidths.duesFrequency }}>
+                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                    <div className="truncate" title={duesFrequencyLabels[member.duesFrequency]}>
+                      {duesFrequencyLabels[member.duesFrequency]}
+                    </div>
+                  </span>
+                </td>
+                
+                {/* Ödeme Durumu */}
+                <td className="px-4 py-4 border-r border-gray-200" style={{ width: columnWidths.paymentStatus }}>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     paymentStatusColors[member.paymentStatus]
                   }`}>
-                    {paymentStatusLabels[member.paymentStatus]}
+                    <div className="truncate" title={paymentStatusLabels[member.paymentStatus]}>
+                      {paymentStatusLabels[member.paymentStatus]}
+                    </div>
                   </span>
                 </td>
+                
+                {/* İşlemler */}
                 <td className="px-4 py-4">
                   <div className="flex items-center justify-center space-x-2">
                     <button
