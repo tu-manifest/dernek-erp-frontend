@@ -114,6 +114,10 @@ const MemberTable: React.FC<MemberTableProps> = ({
       const aValue = a[sortField];
       const bValue = b[sortField];
       
+      // Undefined veya null değerleri handle et
+      if (aValue === undefined || aValue === null) return 1;
+      if (bValue === undefined || bValue === null) return -1;
+      
       if (sortDirection === 'asc') {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       } else {

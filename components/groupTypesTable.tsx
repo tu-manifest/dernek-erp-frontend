@@ -15,6 +15,7 @@ import {
   Scale,
   Network
 } from 'lucide-react';
+import Modal from '@/components/Modal';
 
 // API'den gelen grup verisi için interface
 interface Group {
@@ -60,6 +61,12 @@ const GroupTable: React.FC<GroupTableProps> = ({
   const [sortField, setSortField] = useState<keyof Group>('group_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
+  
+  // Yeni grup ekleme modal state'leri
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [formErrors, setFormErrors] = useState<{groupName?: string; description?: string}>({});
 
   const displayGroups = groups || [];
 
@@ -80,6 +87,10 @@ const GroupTable: React.FC<GroupTableProps> = ({
     .sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
+      
+      // Undefined veya null değerleri handle et
+      if (aValue === undefined || aValue === null) return 1;
+      if (bValue === undefined || bValue === null) return -1;
       
       if (sortDirection === 'asc') {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
@@ -119,6 +130,69 @@ const GroupTable: React.FC<GroupTableProps> = ({
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Yeni grup ekleme fonksiyonu
+  const handleAddNewGroup = () => {
+    // Form validasyonu
+    const errors: {groupName?: string; description?: string} = {};
+    
+    if (!newGroupName.trim()) {
+      errors.groupName = 'Grup adı gereklidir';
+    } else if (newGroupName.trim().length < 3) {
+      errors.groupName = 'Grup adı en az 3 karakter olmalıdır';
+    }
+    
+    if (!newGroupDescription.trim()) {
+      errors.description = 'Açıklama gereklidir';
+    } else if (newGroupDescription.trim().length < 10) {
+      errors.description = 'Açıklama en az 10 karakter olmalıdır';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
+    // Form verilerini hazırla
+    const newGroup = {
+      group_name: newGroupName.trim(),
+      description: newGroupDescription.trim(),
+      isActive: true
+    };
+    
+    console.log('Yeni grup ekleniyor:', newGroup);
+    
+    // Burada API çağrısı yapılacak
+    // Şimdilik sadece console'a yazdırıyoruz
+    alert('Grup başarıyla eklendi!\n\nGrup Adı: ' + newGroup.group_name + '\nAçıklama: ' + newGroup.description);
+    
+    // Form'u temizle ve modal'ı kapat
+    setNewGroupName('');
+    setNewGroupDescription('');
+    setFormErrors({});
+    setIsAddModalOpen(false);
+    
+    // Eğer onAddNew prop'u varsa çağır
+    if (onAddNew) {
+      onAddNew();
+    }
+  };
+
+  // Modal'ı açma
+  const openAddModal = () => {
+    setNewGroupName('');
+    setNewGroupDescription('');
+    setFormErrors({});
+    setIsAddModalOpen(true);
+  };
+
+  // Modal'ı kapatma
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setNewGroupName('');
+    setNewGroupDescription('');
+    setFormErrors({});
   };
 
   // Loading durumu
@@ -196,12 +270,13 @@ const GroupTable: React.FC<GroupTableProps> = ({
             
             {/* Add New Button */}
             <button 
-              onClick={onAddNew}
+              onClick={openAddModal}
               className="bg-white text-blue-600 px-4 py-2.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 font-medium"
             >
               <Plus size={18} />
               <span>Yeni Grup</span>
             </button>
+
             
             {/* Export Button */}
             <button 
@@ -458,6 +533,112 @@ const GroupTable: React.FC<GroupTableProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Yeni Grup Ekleme Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={closeAddModal}
+        title="Yeni Grup Ekle"
+        size="lg"
+      >
+        <div className="space-y-6">
+          {/* Grup Adı */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Grup Adı <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Users className="absolute left-3 top-3 text-gray-400" size={20} />
+              <input
+                type="text"
+                value={newGroupName}
+                onChange={(e) => {
+                  setNewGroupName(e.target.value);
+                  if (formErrors.groupName) {
+                    setFormErrors(prev => ({ ...prev, groupName: undefined }));
+                  }
+                }}
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  formErrors.groupName ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Örn: Yönetim Kurulu, Proje Ekibi..."
+                maxLength={100}
+              />
+            </div>
+            {formErrors.groupName && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.groupName}</p>
+            )}
+            <p className="text-gray-500 text-xs mt-1">
+              {newGroupName.length}/100 karakter
+            </p>
+          </div>
+
+          {/* Açıklama */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Açıklama <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <FileText className="absolute left-3 top-3 text-gray-400" size={20} />
+              <textarea
+                value={newGroupDescription}
+                onChange={(e) => {
+                  setNewGroupDescription(e.target.value);
+                  if (formErrors.description) {
+                    setFormErrors(prev => ({ ...prev, description: undefined }));
+                  }
+                }}
+                rows={6}
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none ${
+                  formErrors.description ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Grubun görev ve sorumluluklarını detaylı olarak açıklayınız..."
+                maxLength={500}
+              />
+            </div>
+            {formErrors.description && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+            )}
+            <p className="text-gray-500 text-xs mt-1">
+              {newGroupDescription.length}/500 karakter
+            </p>
+          </div>
+
+          {/* Bilgi Mesajı */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">Bilgi</h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  <p>Yeni oluşturulan grup varsayılan olarak <strong>aktif</strong> durumda olacaktır.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-3 pt-4 border-t">
+            <button
+              onClick={closeAddModal}
+              className="px-6 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              İptal
+            </button>
+            <button
+              onClick={handleAddNewGroup}
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-lg hover:from-blue-700 hover:to-indigo-800 transition-all transform hover:scale-105 font-medium flex items-center space-x-2"
+            >
+              <Plus size={18} />
+              <span>Grup Ekle</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
