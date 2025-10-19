@@ -1,12 +1,13 @@
-import React from 'react';
+//tahsilat kaydı sayfası
 
-export default function CollectionPage() {
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import TahsilatForm from "../../../components/financeCollection";
+
+export default function TahsilatListePage() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Tahsilat Kaydı</h1>
-      <div className="bg-white rounded-lg shadow p-6">
-        <p>Tahsilat kayıt formu burada yer alacak.</p>
-      </div>
-    </div>
+    <main>
+      <TahsilatForm />
+    </main>
   );
 }
