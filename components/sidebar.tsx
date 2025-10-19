@@ -200,7 +200,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           path: "/finance/debt-view",
         },
         { title: "Raporlar", icon: BarChart3, path: "/finance/reports" },
-        { title: "Dışa Aktar", icon: Download, path: "/finance/export" },
       ],
     },
     {
