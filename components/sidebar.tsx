@@ -101,11 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           path: "/members/list",
         },
         { title: "Grup Yönetimi", icon: Users, path: "/members/groups" },
-        {
-          title: "Hazırun Listesi",
-          icon: ClipboardList,
-          path: "/members/attendance",
-        },
+        
       ],
     },
     
@@ -114,11 +110,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       title: "Bağış Yönetimi",
       icon: HeartHandshake, // Yeni ikon önerisi
       subItems: [
-        { title: "Yeni Bağış Oluştur", icon: DollarSign, path: "/donations/create" }, // İstenen sayfa
+        { title: "Yeni Kampanya Oluştur", icon: DollarSign, path: "/donations/create" }, // İstenen sayfa
+        { title: "Kampanya Listesi", icon: List, path: "/donations/list" },
         { title: "Dış Bağışçı Ekle", icon: UserPlus, path: "/donations/donor/add" }, // İstenen sayfa
-        { title: "Bağış Listesi", icon: List, path: "/donations/list" },
-        { title: "Bağışçı Listesi", icon: Users, path: "/donations/donors" },
-        { title: "Kampanya Yönetimi", icon: Megaphone, path: "/donations/campaigns" },
+        { title: "Dış Bağışçı Listesi", icon: Users, path: "/donations/donors" },
       ],
     },
     {
@@ -217,11 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           icon: List,
           path: "/documents/list",
         },
-        {
-          title: "Erişim İzinleri",
-          icon: Settings,
-          path: "/documents/permissions",
-        },
+   
       ],
     },
 ];
@@ -410,15 +401,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       </nav>
 
       {/* Footer */}
-      <div className="p-6 border-t border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
-        <div className="flex items-center justify-center space-x-2 text-slate-500">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-xs font-medium">Sistem Aktif</span>
-        </div>
-        <div className="text-xs text-slate-600 text-center mt-2">
-          © 2024 Dernek Yönetim Sistemi v2.0
-        </div>
-      </div>
+      
 
       {/* Custom animations */}
       <style jsx>{`
