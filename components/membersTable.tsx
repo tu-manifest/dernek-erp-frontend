@@ -15,6 +15,9 @@ import {
   CreditCard
 } from 'lucide-react';
 import useGetGroups from '../hooks/useGetGroups';
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+
 
 interface Member {
   id: string;
@@ -190,6 +193,38 @@ const MemberTable: React.FC<MemberTableProps> = ({
     }
   }, [resizing, startX, startWidth]);
 
+  const handleExportExcel = () => {
+  if (!filteredMembers.length) {
+    alert("Listelenecek üye bulunamadı!");
+    return;
+  }
+
+  // Excel'e aktarılacak veriyi sadeleştir
+  const exportData = filteredMembers.map((member) => ({
+    "Ad Soyad": member.fullName,
+    "T.C. No": member.tcNumber,
+    "Doğum Tarihi": new Date(member.birthDate).toLocaleDateString("tr-TR"),
+    "Telefon": member.phoneNumber,
+    "E-posta": member.email,
+    "Adres": member.address,
+    "Grup": member.group?.group_name || "Grup Yok",
+    "Aidat (TL)": member.duesAmount,
+    "Ödeme Sıklığı": member.duesFrequency,
+    "Durum": member.paymentStatus,
+  }));
+
+  // Excel dosyası oluştur
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Üyeler");
+
+  // Dosyayı indir
+  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+  saveAs(blob, `UyeListesi_${new Date().toLocaleDateString("tr-TR")}.xlsx`);
+};
+
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       {/* CSS for resizable columns */}
@@ -272,9 +307,12 @@ const MemberTable: React.FC<MemberTableProps> = ({
             </select>
             
             {/* Export Button */}
-            <button className="bg-white text-blue-600 px-4 py-2.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 font-medium">
-              <Download size={18} />
-              <span>Dışa Aktar</span>
+            <button
+              onClick={handleExportExcel}
+              className="bg-white text-blue-600 px-4 py-2.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 font-medium"
+             >
+            <Download size={18} />
+            <span>Dışa Aktar</span>
             </button>
           </div>
         </div>
