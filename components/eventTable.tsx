@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Search, Download, Plus, Calendar, MapPin, Users, Clock, Edit, Trash2, Eye, Filter } from "lucide-react";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 interface Etkinlik {
   id: number;
@@ -154,6 +156,36 @@ export default function EventTable({ onEdit, onDelete, onAddNew }: EventTablePro
     return filteredEtkinlikler.reduce((total, e) => total + e.katilimciSayisi, 0);
   };
 
+  // Excel Export fonksiyonu
+  const handleExportExcel = () => {
+    if (!filteredEtkinlikler.length) {
+      alert("Listelenecek etkinlik bulunamadı!");
+      return;
+    }
+
+    // Excel'e aktarılacak veriyi hazırla
+    const exportData = filteredEtkinlikler.map((etkinlik) => ({
+      "Etkinlik Adı": etkinlik.isim,
+      "Tarih": formatDate(etkinlik.tarih),
+      "Saat": etkinlik.saat,
+      "Tür": etkinlik.tur,
+      "Yer": etkinlik.yer,
+      "Açıklama": etkinlik.aciklama,
+      "Katılımcı Sayısı": etkinlik.katilimciSayisi,
+      "Durum": etkinlik.durum,
+    }));
+
+    // Excel dosyası oluştur
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Etkinlikler");
+
+    // Dosyayı indir
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(blob, `EtkinlikListesi_${new Date().toLocaleDateString("tr-TR")}.xlsx`);
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       {/* Header */}
@@ -203,6 +235,7 @@ export default function EventTable({ onEdit, onDelete, onAddNew }: EventTablePro
             
             {/* Export Button */}
             <button 
+              onClick={handleExportExcel}
               className="bg-white text-blue-600 px-4 py-2.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 font-medium"
             >
               <Download size={18} />

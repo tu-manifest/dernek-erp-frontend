@@ -16,6 +16,8 @@ import {
   Network
 } from 'lucide-react';
 import Modal from '@/components/Modal';
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // API'den gelen grup verisi için interface
 interface Group {
@@ -179,6 +181,34 @@ const GroupTable: React.FC<GroupTableProps> = ({
     }
   };
 
+  // Excel Export fonksiyonu
+  const handleExportExcel = () => {
+    if (!filteredGroups.length) {
+      alert("Listelenecek grup bulunamadı!");
+      return;
+    }
+
+    // Excel'e aktarılacak veriyi hazırla
+    const exportData = filteredGroups.map((group) => ({
+      "Grup Adı": group.group_name,
+      "Açıklama": group.description,
+      "Üye Sayısı": group.memberCount,
+      "Durum": group.isActive ? "Aktif" : "Pasif",
+      "Oluşturma Tarihi": formatDate(group.createdAt),
+      "Güncellenme Tarihi": formatDate(group.updatedAt),
+    }));
+
+    // Excel dosyası oluştur
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Gruplar");
+
+    // Dosyayı indir
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(blob, `GrupListesi_${new Date().toLocaleDateString("tr-TR")}.xlsx`);
+  };
+
   // Modal'ı açma
   const openAddModal = () => {
     setNewGroupName('');
@@ -241,7 +271,6 @@ const GroupTable: React.FC<GroupTableProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-white mb-2">Grup Yönetimi</h2>
-
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
@@ -276,10 +305,10 @@ const GroupTable: React.FC<GroupTableProps> = ({
               <Plus size={18} />
               <span>Yeni Grup</span>
             </button>
-
             
             {/* Export Button */}
             <button 
+              onClick={handleExportExcel}
               className="bg-white text-blue-600 px-4 py-2.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 font-medium"
             >
               <Download size={18} />
@@ -289,77 +318,73 @@ const GroupTable: React.FC<GroupTableProps> = ({
         </div>
       </div>
 
-     {/* Statistics Cards */}
-<div className="bg-gray-50 p-6 border-b">
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-    
-    {/* 1. Aktif Gruplar */}
-    <div className="bg-white p-4 rounded-lg shadow-sm">
-      <div className="flex items-center">
-        <div className="p-2 bg-blue-100 rounded-lg">
-          {/* KONU: Grupların kendisi. Users yerine daha genel bir temsil. */}
-          <Network className="text-blue-600" size={20} /> 
-        </div>
-        <div className="ml-3">
-          <p className="text-sm font-medium text-gray-600">Aktif Gruplar</p>
-          <p className="text-xl font-bold text-gray-900">
-            {statistics?.activeGroups || filteredGroups.filter(g => g.isActive).length}
-          </p>
+      {/* Statistics Cards */}
+      <div className="bg-gray-50 p-6 border-b">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          
+          {/* 1. Aktif Gruplar */}
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Network className="text-blue-600" size={20} /> 
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-600">Aktif Gruplar</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {statistics?.activeGroups || filteredGroups.filter(g => g.isActive).length}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* 2. Toplam Üye */}
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Users className="text-green-600" size={20} />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-600">Toplam Üye</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {statistics?.totalMembers || filteredGroups.reduce((total, group) => total + group.memberCount, 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* 3. Ortalama Üye */}
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Scale className="text-yellow-600" size={20} /> 
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-600">Ortalama Üye</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {statistics?.averageMembersPerGroup || 
+                    (filteredGroups.length > 0 ? Math.round(filteredGroups.reduce((total, group) => total + group.memberCount, 0) / filteredGroups.length) : 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* 4. En Kalabalık Grup */}
+          <div className="bg-white p-4 rounded-lg shadow-sm">
+            <div className="flex items-center">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <TrendingUp className="text-red-600" size={20} />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-600">En Kalabalık Grup</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {statistics?.largestGroupSize || 
+                    (filteredGroups.length > 0 ? Math.max(...filteredGroups.map(g => g.memberCount)) : 0)}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    
-    {/* 2. Toplam Üye */}
-    <div className="bg-white p-4 rounded-lg shadow-sm">
-      <div className="flex items-center">
-        <div className="p-2 bg-green-100 rounded-lg">
-          {/* KONU: Toplam kişi sayısı. Users en uygun ikondur. */}
-          <Users className="text-green-600" size={20} />
-        </div>
-        <div className="ml-3">
-          <p className="text-sm font-medium text-gray-600">Toplam Üye</p>
-          <p  className="text-xl font-bold text-gray-900">
-            {statistics?.totalMembers || filteredGroups.reduce((total, group) => total + group.memberCount, 0)}
-          </p>
-        </div>
-      </div>
-    </div>
-    
-    {/* 3. Ortalama Üye */}
-    <div className="bg-white p-4 rounded-lg shadow-sm">
-      <div className="flex items-center">
-        <div className="p-2 bg-yellow-100 rounded-lg">
-          {/* KONU: Ortalama, denge veya hesaplama. Scale veya Equal en uygunudur. */}
-          <Scale className="text-yellow-600" size={20} /> 
-        </div>
-        <div className="ml-3">
-          <p className="text-sm font-medium text-gray-600">Ortalama Üye</p>
-          <p className="text-xl font-bold text-gray-900">
-            {statistics?.averageMembersPerGroup || 
-              (filteredGroups.length > 0 ? Math.round(filteredGroups.reduce((total, group) => total + group.memberCount, 0) / filteredGroups.length) : 0)}
-          </p>
-        </div>
-      </div>
-    </div>
-    
-    {/* 4. En Kalabalık Grup */}
-    <div className="bg-white p-4 rounded-lg shadow-sm">
-      <div className="flex items-center">
-        <div className="p-2 bg-red-100 rounded-lg"> {/* Rengi Vurgu için kırmızıya çektim */}
-          {/* KONU: En yüksek değer, zirve veya kalabalık. */}
-          <TrendingUp className="text-red-600" size={20} />
-        </div>
-        <div className="ml-3">
-          <p className="text-sm font-medium text-gray-600">En Kalabalık Grup</p>
-          <p className="text-xl font-bold text-gray-900">
-            {statistics?.largestGroupSize || 
-              (filteredGroups.length > 0 ? Math.max(...filteredGroups.map(g => g.memberCount)) : 0)}
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
       {/* Table */}
       <div className="overflow-x-auto">
@@ -448,7 +473,6 @@ const GroupTable: React.FC<GroupTableProps> = ({
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center">
-                   
                     <div className="font-medium text-gray-900">{group.group_name}</div>
                   </div>
                 </td>
