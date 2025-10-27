@@ -15,8 +15,8 @@ export default function BorcGirisiPage() {
           <ArrowLeft size={24} />
         {/*</Link> */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Borç Girişi</h1>
-          <p className="text-gray-600 mt-1">Yeni borç kaydı oluşturun</p>
+          <h1 className="text-2xl font-bold text-gray-800">Alacak Girişi</h1>
+          <p className="text-gray-600 mt-1">Yeni alacak kaydı oluşturun</p>
         </div>
       </div>
 

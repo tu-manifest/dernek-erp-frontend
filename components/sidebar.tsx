@@ -184,16 +184,18 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
     },
     {
       id: "finance",
-      title: "Finansal Rapor Yönetimi",
+      title: "Finansal İşlemler Yönetimi",
       icon: DollarSign,
       subItems: [
-        { title: "Borç Girişi", icon: CreditCard, path: "/finance/debt-entry" },
+        { title: "Alacak Girişi", icon: CreditCard, path: "/finance/debt-entry" },
+        { title: "Gider Girişi", icon: CreditCard, path: "/finance/expense-entry" },
         { title: "Tahsilat Kaydı", icon: Receipt, path: "/finance/collection" },
         {
           title: "Borç Görüntüleme",
           icon: Eye,
           path: "/finance/debt-view",
         },
+        { title:"Yıllık Bütçe Planlaması Oluştur", icon: FileSpreadsheet, path:"/finance/yearly-budget-planning" },
         { title: "Raporlar", icon: BarChart3, path: "/finance/reports" },
       ],
     },

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Send, Mail, MessageCircle, Settings, X } from "lucide-react";
 import useGetGroups from "@/hooks/useGetGroups";
 import Modal from "@/components/Modal";
-import WhatsAppConnection from "@/components/WhatsAppConnection";
+import WhatsAppConnection from "@/components/whatsappConnection";
 
 interface SelectedGroup {
   id: number;
