@@ -263,67 +263,74 @@ const MembershipForm: React.FC = () => {
   const { addNewMember, error } = useAddNewMember();
 
   const handleSubmit = async (): Promise<void> => {
-    if (validateForm()) {
-      try {
-        // membershipType'ı group_id'ye dönüştürüp API'nin beklediği formata çevir
-        const submitData = {
-          fullName: formData.fullName,
-          tcNumber: formData.tcNumber,
-          birthDate: formData.birthDate,
-          phoneNumber: formData.phoneNumber,
-          email: formData.email,
-          additionalNotes: formData.additionalNotes,
-          address: formData.address,
-          group_id: parseInt(formData.membershipType), // membershipType'ı group_id olarak gönder
-          duesAmount: parseFloat(formData.duesAmount),
-          duesFrequency: formData.duesFrequency as
-            | "monthly"
-            | "quarterly"
-            | "annual",
-          paymentStatus: formData.paymentStatus as
-            | "paid"
-            | "pending"
-            | "overdue",
-          charterApproval: formData.charterApproval,
-          kvkkApproval: formData.kvkkApproval,
-        };
+    if (!validateForm()) {
+      toast.error("Lütfen tüm gerekli alanları doldurun");
+      return;
+    }
 
-        console.log("Form gönderiliyor:", submitData);
+    try {
+      // membershipType'ı group_id'ye dönüştürüp API'nin beklediği formata çevir
+      const submitData = {
+        fullName: formData.fullName,
+        tcNumber: formData.tcNumber,
+        birthDate: formData.birthDate,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email,
+        additionalNotes: formData.additionalNotes,
+        address: formData.address,
+        group_id: parseInt(formData.membershipType), // membershipType'ı group_id olarak gönder
+        duesAmount: parseFloat(formData.duesAmount),
+        duesFrequency: formData.duesFrequency as
+          | "monthly"
+          | "quarterly"
+          | "annual",
+        paymentStatus: formData.paymentStatus as
+          | "paid"
+          | "pending"
+          | "overdue",
+        charterApproval: formData.charterApproval,
+        kvkkApproval: formData.kvkkApproval,
+      };
 
-        const result = await addNewMember(submitData);
+      console.log("Form gönderiliyor:", submitData);
 
-        console.log("Üye başarıyla eklendi:", result);
-        alert("Üye başarıyla eklendi!");
+      const result = await addNewMember(submitData);
 
-        // Form'u sıfırla
-        setFormData({
-          additionalNotes: "",
-          fullName: "",
-          tcNumber: "",
-          birthDate: "",
-          phoneNumber: "",
-          email: "",
-          address: "",
-          membershipType: "",
-          applicationDate: new Date().toISOString().split("T")[0],
-          duesAmount: "",
-          duesFrequency: "",
-          paymentStatus: "pending",
-          idCopyFile: null,
-          photoFile: null,
-          charterApproval: false,
-          kvkkApproval: false,
-        });
-        setErrors({});
-      } catch (error) {
-        console.error("Üye ekleme hatası:", error);
-        alert("Üye eklenirken bir hata oluştu: " + (error as Error).message);
-      }
+      console.log("Üye başarıyla eklendi:", result);
+
+      // Başarılı mesajı göster
+      toast.success("Üye başarıyla eklendi!");
+
+      // Form'u sıfırla
+      setFormData({
+        additionalNotes: "",
+        fullName: "",
+        tcNumber: "",
+        birthDate: "",
+        phoneNumber: "",
+        email: "",
+        address: "",
+        membershipType: "",
+        applicationDate: new Date().toISOString().split("T")[0],
+        duesAmount: "",
+        duesFrequency: "",
+        paymentStatus: "pending",
+        idCopyFile: null,
+        photoFile: null,
+        charterApproval: false,
+        kvkkApproval: false,
+      });
+      setErrors({});
+    } catch (error) {
+      console.error("Üye eklenirken hata:", error);
+      toast.error(
+        "Üye eklenirken bir hata oluştu: " + (error as Error).message
+      );
     }
   };
 
   const { groups, isLoading, isError } = useGetGroups();
-  console.log("Fetched groups:", groups);
+
 
   return (
     <div className="min-h-screen py-16 px-6 lg:px-12 bg-gray-100">
@@ -852,11 +859,7 @@ const MembershipForm: React.FC = () => {
             {/* Submit Button */}
             <div className="flex justify-center pt-8">
               <button
-                onClick={() => {
-                  handleSubmit();
-
-                  toast.success("Üye başarıyla eklendi!");
-                }}
+                onClick={handleSubmit}
                 className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-16 py-4 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-800 transform hover:scale-105 transition-all duration-200 shadow-lg flex items-center space-x-3"
               >
                 <Check size={28} />
