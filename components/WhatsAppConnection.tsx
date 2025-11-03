@@ -19,7 +19,7 @@ const WhatsAppConnection: React.FC<WhatsAppConnectionProps> = ({ onClose }) => {
     // Socket.IO bağlantısı
     const newSocket = io('http://63.179.236.163:8080', {
       transports: ['websocket'],
-      cors: { origin: '*' }
+      
     });
 
     setSocket(newSocket);
