@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8000/api"; // Base API URL
+const API_BASE_URL = "http://63.179.236.163:8080/api"; // Base API URL
 
 export const API_ENDPOINTS = {
   groups: {
@@ -20,7 +20,7 @@ export const API_ENDPOINTS = {
 
   members: {
     // CREATE - Yeni üye oluştur
-    addNewMember: `${API_BASE_URL}/members/add-new-member`,
+    addNewMember: `${API_BASE_URL}/members/`,
 
     // READ - Tüm üyeleri getir
     getAllMembers: `${API_BASE_URL}/members`,

@@ -25,17 +25,17 @@ interface BorcGirisiFormProps {
 }
 
 const borcTurleri = [
-  "Etkinlik katılım ücreti",
-  "Materyal alım ücreti",
-  "Kiralama/tesis kullanım ücreti",
+  "Etkinlik Katılım Ücreti",
+  "Materyal Alım Ücreti",
+  "Kiralama/Tesis Kullanım Ücreti",
   "Bağış Sözü",
   "Kampanya Taahüdü",
-  "Vakıf/Hibe sözü",
-  "Tazminat Hasar bedeli",
-  "Sözleşme ihlali Bedeli",
-  "Devlet iadesi",
+  "Vakıf/Hibe Sözü",
+  "Tazminat Hasar Bedeli",
+  "Sözleşme İhlali Bedeli",
+  "Devlet İadesi",
   "Sigorta Hasar Bedeli",
-  "Fon Toplama etkinliği geliri",
+  "Fon Toplama Etkinliği Geliri",
   "Ayni Bağış Değeri"
 ];
 

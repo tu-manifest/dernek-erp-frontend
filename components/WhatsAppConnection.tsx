@@ -17,9 +17,9 @@ const WhatsAppConnection: React.FC<WhatsAppConnectionProps> = ({ onClose }) => {
 
   useEffect(() => {
     // Socket.IO bağlantısı
-    const newSocket = io('http://localhost:8000', {
+    const newSocket = io('http://63.179.236.163:8080', {
       transports: ['websocket'],
-      cors: { origin: '*' }
+      
     });
 
     setSocket(newSocket);
@@ -154,7 +154,7 @@ const WhatsAppConnection: React.FC<WhatsAppConnectionProps> = ({ onClose }) => {
               <QRCodeCanvas value={qrCode} size={280} level="H" />
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-">
               <h3 className="text-xl font-semibold text-gray-800">
                 Telefonunuzdan QR Kodu Tarayın
               </h3>
@@ -253,18 +253,7 @@ const WhatsAppConnection: React.FC<WhatsAppConnectionProps> = ({ onClose }) => {
         )}
       </div>
 
-      {/* Connection Info */}
-      <div className="border-t pt-4">
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <div className="flex items-center space-x-2">
-            <Wifi size={16} />
-            <span>Socket.IO Bağlantısı: {socket?.connected ? 'Aktif' : 'Bağlantı Kesildi'}</span>
-          </div>
-          <div>
-            <span>Server: localhost:8000</span>
-          </div>
-        </div>
-      </div>
+   
     </div>
   );
 };

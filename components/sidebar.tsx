@@ -34,6 +34,7 @@ import {
   HeartHandshake,
   Briefcase,
   NotebookText,
+  FilePlus,
 } from "lucide-react";
 import Image from "next/image";
 interface SubMenuItem {
@@ -85,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       id: "dashboard",
       title: "Ana Sayfa",
       icon: Home,
-      path: "/",
+      path: "/dashboard",
       single: true,
     },
 
@@ -108,23 +109,21 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
     {
       id: "donations",
       title: "Bağış Yönetimi",
-      icon: HeartHandshake, // Yeni ikon önerisi
+      icon: HeartHandshake,
       subItems: [
-        { title: "Yeni Kampanya Oluştur", icon: DollarSign, path: "/donations/create" }, // İstenen sayfa
+        { title: "Yeni Kampanya Oluştur", icon: DollarSign, path: "/donations/create" },
         { title: "Kampanya Listesi", icon: List, path: "/donations/list" },
-        { title: "Dış Bağışçı Ekle", icon: UserPlus, path: "/donations/donor/add" }, // İstenen sayfa
+        { title: "Dış Bağışçı Ekle", icon: UserPlus, path: "/donations/donor/add" },
         { title: "Dış Bağışçı Listesi", icon: Users, path: "/donations/donors" },
       ],
     },
     {
       id: "meetings",
       title: "Toplantı Yönetimi",
-      icon: Briefcase, // Yeni ikon önerisi (veya Gavel)
+      icon: Briefcase,
       subItems: [
         { title: "Toplantı Planla", icon: CalendarPlus, path: "/meetings/schedule" },
         { title: "Toplantı Listesi", icon: List, path: "/meetings/list" },
-        { title: "Karar Defteri", icon: NotebookText, path: "/meetings/decisions" },
-        { title: "Gündem ve Tutanağa", icon: FileText, path: "/meetings/minutes" },
       ],
     },
     
@@ -152,11 +151,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           icon: List,
           path: "/events/list",
         },
-        {
-          title: "Katılım Takibi",
-          icon: UserCheck,
-          path: "/events/attendance",
-        },
+
         {
           title: "Duyuru Gönder",
           icon: Bell,
@@ -184,16 +179,19 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
     },
     {
       id: "finance",
-      title: "Finansal Rapor Yönetimi",
+      title: "Finansal İşlemler Yönetimi",
       icon: DollarSign,
       subItems: [
-        { title: "Borç Girişi", icon: CreditCard, path: "/finance/debt-entry" },
+        { title: "Alacak Girişi", icon: CreditCard, path: "/finance/debt-entry" },
+        { title: "Gider Girişi", icon: CreditCard, path: "/finance/expense-entry" },
         { title: "Tahsilat Kaydı", icon: Receipt, path: "/finance/collection" },
         {
           title: "Borç Görüntüleme",
           icon: Eye,
           path: "/finance/debt-view",
         },
+        { title: "Sabit Varlık Ekle", icon: FilePlus, path: "/finance/add-fixed-asset" },
+        { title:"Yıllık Bütçe Planlaması Oluştur", icon: FileSpreadsheet, path:"/finance/yearly-budget-planning" },
         { title: "Raporlar", icon: BarChart3, path: "/finance/reports" },
       ],
     },
@@ -400,7 +398,39 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         ))}
       </nav>
 
-      {/* Footer */}
+      {/* Footer - Çıkış Butonu */}
+      <div className="p-4 border-t border-slate-700/50 bg-slate-900/50">
+        <button
+          onClick={() => {
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("userEmail");
+            router.push("/login");
+          }}
+          onMouseEnter={() => setHoveredItem("logout")}
+          onMouseLeave={() => setHoveredItem(null)}
+          className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 transform ${
+            hoveredItem === "logout"
+              ? "bg-red-600 text-white scale-[1.02] shadow-lg shadow-red-500/25"
+              : "text-red-400 hover:bg-red-600/20 hover:text-red-300"
+          }`}
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-5 w-5" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
+            />
+          </svg>
+          <span className="font-medium text-sm">Çıkış Yap</span>
+        </button>
+      </div>
       
 
       {/* Custom animations */}
