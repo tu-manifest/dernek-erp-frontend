@@ -1,6 +1,6 @@
 "use client";
 
-import TahsilatKaydiForm, { TahsilatFormData } from "../../../components/financeCollection";
+import TahsilatKaydiForm, { TahsilatFormData } from "../../../../components/financeCollection";
 import { useState } from "react";
 
 export default function TahsilatKaydiPage() {

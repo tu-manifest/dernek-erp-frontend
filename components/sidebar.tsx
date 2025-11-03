@@ -203,12 +203,12 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         {
           title: "Yeni Döküman Yükle",
           icon: Upload,
-          path: "/dashboard/documents/upload",
+          path: "/documents/upload",
         },
         {
           title: "Döküman Listesi",
           icon: List,
-          path: "/dashboard/documents/list",
+          path: "/documents/list",
         },
    
       ],

@@ -3,7 +3,7 @@
 
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import BorcGirisiForm from "../../../components/financeDebtEntry";
+import BorcGirisiForm from "../../../../components/financeDebtEntry";
 import React, { useState } from "react";
 
 export default function BorcGirisiPage() {

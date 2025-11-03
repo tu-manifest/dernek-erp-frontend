@@ -11,7 +11,7 @@ import {
   Building2,
   AlertCircle
 } from 'lucide-react';
-import Modal from '../../../components/Modal';
+import Modal from '../../../../components/Modal';
 import Link from 'next/link';
 
 interface Debt {
