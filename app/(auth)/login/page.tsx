@@ -69,7 +69,7 @@ export default function LoginPage() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Geçici: Demo giriş kontrolü
-      if (formData.email === "admin@dernek.com" && formData.password === "123456") {
+      if (formData.email === "admin@derp.com" && formData.password === "123456") {
         // Token'ı localStorage'a kaydet
         localStorage.setItem("authToken", "demo-token-12345");
         localStorage.setItem("userEmail", formData.email);
@@ -108,7 +108,7 @@ export default function LoginPage() {
             </div>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Dernek Yönetim Sistemi
+            Derp Dernek Yönetim Sistemi
           </h1>
           <p className="text-gray-600 text-lg">
             Hesabınıza giriş yaparak devam edin
@@ -143,7 +143,7 @@ export default function LoginPage() {
                   className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-gray-50 ${
                     errors.email ? "border-red-500" : "border-gray-200"
                   }`}
-                  placeholder="ornek@dernek.com"
+                  placeholder="ornek@derp.com"
                   disabled={isLoading}
                 />
               </div>
@@ -235,7 +235,7 @@ export default function LoginPage() {
               Demo Hesap Bilgileri:
             </p>
             <div className="text-sm text-blue-800 space-y-1 pl-6">
-              <p>📧 E-posta: <span className="font-mono font-semibold">admin@dernek.com</span></p>
+              <p>📧 E-posta: <span className="font-mono font-semibold">admin@derp.com</span></p>
               <p>🔒 Şifre: <span className="font-mono font-semibold">123456</span></p>
             </div>
           </div>
@@ -244,7 +244,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600">
-            © 2025 Dernek Yönetim Sistemi. Tüm hakları saklıdır.
+            © 2025 Derp Dernek Yönetim Sistemi. Tüm hakları saklıdır.
           </p>
         </div>
       </div>

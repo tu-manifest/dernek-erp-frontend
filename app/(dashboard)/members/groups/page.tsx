@@ -1,7 +1,7 @@
 "use client"
 import React from 'react';
-import GroupTable from '../../../components/groupTypesTable';
-import useGetGroups from '../../../hooks/useGetGroups';
+import GroupTable from '../../../../components/groupTypesTable';
+import useGetGroups from '../../../../hooks/useGetGroups';
 
 export default function MemberGroupsPage() {
   // Hook'u kullanarak grupları çek

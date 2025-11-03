@@ -124,8 +124,6 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       subItems: [
         { title: "Toplantı Planla", icon: CalendarPlus, path: "/meetings/schedule" },
         { title: "Toplantı Listesi", icon: List, path: "/meetings/list" },
-        { title: "Karar Defteri", icon: NotebookText, path: "/meetings/decisions" },
-        { title: "Gündem ve Tutanağa", icon: FileText, path: "/meetings/minutes" },
       ],
     },
     
@@ -153,11 +151,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           icon: List,
           path: "/events/list",
         },
-        {
-          title: "Katılım Takibi",
-          icon: UserCheck,
-          path: "/events/attendance",
-        },
+
         {
           title: "Duyuru Gönder",
           icon: Bell,

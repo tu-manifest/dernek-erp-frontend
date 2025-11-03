@@ -2,7 +2,7 @@
 
 "use client";
 
-import YeniEtkinlikForm from "../../../components/eventAdd";
+import YeniEtkinlikForm from "../../../../components/eventAdd";
 
 export default function YeniEtkinlikPage() {
   return (

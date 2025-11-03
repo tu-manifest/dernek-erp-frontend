@@ -2,7 +2,7 @@
 
 "use client";
 
-import EventTable from "../../../components/eventTable";
+import EventTable from "../../../../components/eventTable";
 
 export default function EventsPage() {
   const handleEdit = (etkinlik: any) => {

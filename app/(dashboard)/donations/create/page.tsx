@@ -1,6 +1,6 @@
 "use client";
 
-import DonationCampaignForm from "../../../components/donationCampaignForm";
+import DonationCampaignForm from "../../../../components/donationCampaignForm";
 
 export default function CreateDonationPage() {
   return (

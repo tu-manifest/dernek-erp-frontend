@@ -1,6 +1,6 @@
 "use client"
-import MemberTable from '../../../components/membersTable';
-import useGetAllMembers from '../../../hooks/getAllMembers';
+import MemberTable from '../../../../components/membersTable';
+import useGetAllMembers from '../../../../hooks/getAllMembers';
 
 export default function MemberListPage() {
   // Hook'u kullanarak üyeleri çek
