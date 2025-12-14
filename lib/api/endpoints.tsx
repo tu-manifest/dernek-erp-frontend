@@ -1,6 +1,18 @@
-const API_BASE_URL = "http://63.179.236.163:8080/api"; // Base API URL
+const API_BASE_URL = "https://63.179.236.163:8080/api"; // Base API URL
+const AUTH_API_BASE_URL = "http://localhost:8000/api"; // Auth API URL
 
 export const API_ENDPOINTS = {
+  auth: {
+    // POST - Login
+    login: `${AUTH_API_BASE_URL}/auth/login`,
+
+    // GET - Get current admin (requires Bearer token)
+    me: `${AUTH_API_BASE_URL}/auth/me`,
+
+    // POST - Register new admin
+    register: `${AUTH_API_BASE_URL}/auth/register`,
+  },
+
   groups: {
     // CREATE - Yeni grup oluştur
     addNewGroup: `${API_BASE_URL}/groups/add-new-group`,

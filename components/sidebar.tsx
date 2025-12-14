@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Users,
@@ -37,6 +37,8 @@ import {
   FilePlus,
 } from "lucide-react";
 import Image from "next/image";
+import { Admin, AdminPermissions } from "@/lib/types/auth.types";
+
 interface SubMenuItem {
   title: string;
   icon: LucideIcon;
@@ -52,6 +54,7 @@ interface MenuItem {
   single?: boolean;
   subItems?: SubMenuItem[];
   badge?: string;
+  requiredPermission?: keyof AdminPermissions;
 }
 
 interface SidebarProps {
@@ -61,11 +64,31 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const [admin, setAdmin] = useState<Admin | null>(null);
 
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     members: true, // Default olarak üye yönetimi açık
   });
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  // Load admin from localStorage
+  useEffect(() => {
+    const storedAdmin = localStorage.getItem("admin");
+    if (storedAdmin) {
+      try {
+        setAdmin(JSON.parse(storedAdmin));
+      } catch (e) {
+        console.error("Failed to parse admin:", e);
+      }
+    }
+  }, []);
+
+  // Check if user has permission
+  const hasPermission = useCallback((permission?: keyof AdminPermissions): boolean => {
+    if (!permission) return true; // No permission required
+    if (!admin || !admin.permissions) return false;
+    return admin.permissions[permission] === true;
+  }, [admin]);
 
   const toggleMenu = useCallback((menuId: string) => {
     setExpandedMenus((prev) => ({
@@ -81,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
     [router]
   );
 
-  const menuItems: MenuItem[] = [
+  const allMenuItems: MenuItem[] = [
     {
       id: "dashboard",
       title: "Ana Sayfa",
@@ -94,6 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       id: "members",
       title: "Üye Yönetimi",
       icon: Users,
+      requiredPermission: "canManageMembers",
       subItems: [
         { title: "Yeni Üye Ekle", icon: UserPlus, path: "/members/add" },
         {
@@ -102,14 +126,15 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           path: "/members/list",
         },
         { title: "Grup Yönetimi", icon: Users, path: "/members/groups" },
-        
+
       ],
     },
-    
+
     {
       id: "donations",
       title: "Bağış Yönetimi",
       icon: HeartHandshake,
+      requiredPermission: "canManageDonations",
       subItems: [
         { title: "Yeni Kampanya Oluştur", icon: DollarSign, path: "/donations/create" },
         { title: "Kampanya Listesi", icon: List, path: "/donations/list" },
@@ -121,16 +146,18 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       id: "meetings",
       title: "Toplantı Yönetimi",
       icon: Briefcase,
+      requiredPermission: "canManageMeetings",
       subItems: [
         { title: "Toplantı Planla", icon: CalendarPlus, path: "/meetings/schedule" },
         { title: "Toplantı Listesi", icon: List, path: "/meetings/list" },
       ],
     },
-    
+
     {
       id: "managers",
       title: "Yönetici İşlemleri",
       icon: Wallpaper,
+      requiredPermission: "canManageAdmins",
       subItems: [
         { title: "Yeni Yönetici Ekle", icon: UserPlus, path: "/managers/add" },
         {
@@ -144,6 +171,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       id: "events",
       title: "Etkinlik Yönetimi",
       icon: Calendar,
+      requiredPermission: "canManageEvents",
       subItems: [
         { title: "Yeni Etkinlik", icon: Plus, path: "/events/add" },
         {
@@ -163,6 +191,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       id: "social",
       title: "Sosyal Medya Yönetimi",
       icon: Share2,
+      requiredPermission: "canManageSocialMedia",
       subItems: [
         { title: "Paylaşım Oluştur", icon: Edit3, path: "/social/create" },
         {
@@ -181,6 +210,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       id: "finance",
       title: "Finansal İşlemler Yönetimi",
       icon: DollarSign,
+      requiredPermission: "canManageFinance",
       subItems: [
         { title: "Alacak Girişi", icon: CreditCard, path: "/finance/debt-entry" },
         { title: "Gider Girişi", icon: CreditCard, path: "/finance/expense-entry" },
@@ -191,7 +221,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           path: "/finance/debt-view",
         },
         { title: "Sabit Varlık Ekle", icon: FilePlus, path: "/finance/add-fixed-asset" },
-        { title:"Yıllık Bütçe Planlaması Oluştur", icon: FileSpreadsheet, path:"/finance/yearly-budget-planning" },
+        { title: "Yıllık Bütçe Planlaması Oluştur", icon: FileSpreadsheet, path: "/finance/yearly-budget-planning" },
         { title: "Raporlar", icon: BarChart3, path: "/finance/reports" },
       ],
     },
@@ -199,6 +229,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       id: "documents",
       title: "Döküman Yönetimi",
       icon: FileText,
+      requiredPermission: "canManageDocuments",
       subItems: [
         {
           title: "Yeni Döküman Yükle",
@@ -210,10 +241,13 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           icon: List,
           path: "/documents/list",
         },
-   
+
       ],
     },
-];
+  ];
+
+  // Filter menu items based on user permissions
+  const menuItems = allMenuItems.filter((item) => hasPermission(item.requiredPermission));
 
   const isActive = useCallback(
     (path: string): boolean => pathname === path,
@@ -231,11 +265,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
     const isNumeric = /^\d+$/.test(badge);
     return (
       <span
-        className={`ml-auto px-2 py-0.5 text-xs font-medium rounded-full transition-all duration-200 ${
-          isNumeric
-            ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-            : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-        }`}
+        className={`ml-auto px-2 py-0.5 text-xs font-medium rounded-full transition-all duration-200 ${isNumeric
+          ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+          : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+          }`}
       >
         {badge}
       </span>
@@ -247,25 +280,25 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       className={`bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 text-white w-72 min-h-screen flex flex-col shadow-2xl border-r border-slate-700/50 ${className}`}
     >
       {/* Header */}
- <div className="pl-6 pr-14 border-b border-slate-700/50 bg-gradient-to-b from-slate-800/80 to-slate-900/80 backdrop-blur-md">
-  <div className="flex items-center justify-center">
-    <div className="relative flex items-center justify-center">
-      <Image
-        src="/logo.png"
-        alt="Derp Logo"
-        width={250}
-        height={250}
-        className="rounded-xl z-10 relative"
-      />
-    </div>
+      <div className="pl-6 pr-14 border-b border-slate-700/50 bg-gradient-to-b from-slate-800/80 to-slate-900/80 backdrop-blur-md">
+        <div className="flex items-center justify-center">
+          <div className="relative flex items-center justify-center">
+            <Image
+              src="/logo.png"
+              alt="Derp Logo"
+              width={250}
+              height={250}
+              className="rounded-xl z-10 relative"
+            />
+          </div>
 
-    <div className="flex flex-col justify-center">
-      <h1 className="text-3xl font-bold text-white tracking-wide leading-tight">
-        Derp
-      </h1>
-    </div>
-  </div>
-</div>
+          <div className="flex flex-col justify-center">
+            <h1 className="text-3xl font-bold text-white tracking-wide leading-tight">
+              Derp
+            </h1>
+          </div>
+        </div>
+      </div>
 
 
       {/* Navigation */}
@@ -278,19 +311,17 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
                 onClick={() => handleNavigation(item.path!)}
                 onMouseEnter={() => setHoveredItem(item.id)}
                 onMouseLeave={() => setHoveredItem(null)}
-                className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 transform ${
-                  isActive(item.path!)
-                    ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 scale-[1.02]"
-                    : hoveredItem === item.id
+                className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 transform ${isActive(item.path!)
+                  ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25 scale-[1.02]"
+                  : hoveredItem === item.id
                     ? "bg-slate-700/70 text-white scale-[1.01] shadow-lg"
                     : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                }`}
+                  }`}
               >
                 <item.icon
                   size={22}
-                  className={`flex-shrink-0 transition-all duration-300 ${
-                    isActive(item.path!) ? "text-white" : "text-slate-400"
-                  }`}
+                  className={`flex-shrink-0 transition-all duration-300 ${isActive(item.path!) ? "text-white" : "text-slate-400"
+                    }`}
                 />
                 <span className="font-medium text-sm flex-1 text-left">
                   {item.title}
@@ -304,51 +335,46 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
                   onClick={() => toggleMenu(item.id)}
                   onMouseEnter={() => setHoveredItem(item.id)}
                   onMouseLeave={() => setHoveredItem(null)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 transform ${
-                    isParentActive(item.subItems)
-                      ? "bg-slate-700/80 text-white shadow-md"
-                      : hoveredItem === item.id
+                  className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 transform ${isParentActive(item.subItems)
+                    ? "bg-slate-700/80 text-white shadow-md"
+                    : hoveredItem === item.id
                       ? "bg-slate-700/60 text-white scale-[1.01]"
                       : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                  }`}
+                    }`}
                 >
                   <item.icon
                     size={22}
-                    className={`flex-shrink-0 transition-all duration-300 ${
-                      isParentActive(item.subItems)
-                        ? "text-blue-400"
-                        : "text-slate-400"
-                    }`}
+                    className={`flex-shrink-0 transition-all duration-300 ${isParentActive(item.subItems)
+                      ? "text-blue-400"
+                      : "text-slate-400"
+                      }`}
                   />
                   <span className="font-medium text-sm flex-1 text-left">
                     {item.title}
                   </span>
                   <ChevronDown
                     size={18}
-                    className={`transition-all duration-300 ${
-                      expandedMenus[item.id]
-                        ? "rotate-180 text-blue-400"
-                        : "rotate-0 text-slate-500"
-                    }`}
+                    className={`transition-all duration-300 ${expandedMenus[item.id]
+                      ? "rotate-180 text-blue-400"
+                      : "rotate-0 text-slate-500"
+                      }`}
                   />
                 </button>
 
                 {/* Submenu with smooth animation */}
                 <div
-                  className={`overflow-hidden transition-all duration-500 ease-out ${
-                    expandedMenus[item.id]
-                      ? "max-h-96 opacity-100"
-                      : "max-h-0 opacity-0"
-                  }`}
+                  className={`overflow-hidden transition-all duration-500 ease-out ${expandedMenus[item.id]
+                    ? "max-h-96 opacity-100"
+                    : "max-h-0 opacity-0"
+                    }`}
                 >
                   <div className="ml-6 mt-2 space-y-1 border-l-2 border-slate-600/50 pl-4 relative">
                     {/* Animated line */}
                     <div
-                      className={`absolute left-0 top-0 w-0.5 bg-gradient-to-b from-blue-500 to-transparent transition-all duration-700 ${
-                        expandedMenus[item.id]
-                          ? "h-full opacity-100"
-                          : "h-0 opacity-0"
-                      }`}
+                      className={`absolute left-0 top-0 w-0.5 bg-gradient-to-b from-blue-500 to-transparent transition-all duration-700 ${expandedMenus[item.id]
+                        ? "h-full opacity-100"
+                        : "h-0 opacity-0"
+                        }`}
                     />
 
                     {item.subItems?.map((subItem, index) => (
@@ -359,17 +385,15 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
                           setHoveredItem(`${item.id}-${index}`)
                         }
                         onMouseLeave={() => setHoveredItem(null)}
-                        className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-300 transform ${
-                          isActive(subItem.path)
-                            ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20 scale-[1.02]"
-                            : hoveredItem === `${item.id}-${index}`
+                        className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-300 transform ${isActive(subItem.path)
+                          ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20 scale-[1.02]"
+                          : hoveredItem === `${item.id}-${index}`
                             ? "bg-slate-600/60 text-white scale-[1.01] shadow-md"
                             : "text-slate-400 hover:bg-slate-700/40 hover:text-slate-200"
-                        } ${
-                          expandedMenus[item.id]
+                          } ${expandedMenus[item.id]
                             ? `animate-slide-in-${index}`
                             : ""
-                        }`}
+                          }`}
                         style={{
                           animationDelay: expandedMenus[item.id]
                             ? `${index * 50}ms`
@@ -378,11 +402,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
                       >
                         <subItem.icon
                           size={18}
-                          className={`flex-shrink-0 transition-all duration-300 ${
-                            isActive(subItem.path)
-                              ? "text-white"
-                              : "text-slate-500"
-                          }`}
+                          className={`flex-shrink-0 transition-all duration-300 ${isActive(subItem.path)
+                            ? "text-white"
+                            : "text-slate-500"
+                            }`}
                         />
                         <span className="flex-1 text-left font-medium">
                           {subItem.title}
@@ -408,30 +431,29 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           }}
           onMouseEnter={() => setHoveredItem("logout")}
           onMouseLeave={() => setHoveredItem(null)}
-          className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 transform ${
-            hoveredItem === "logout"
-              ? "bg-red-600 text-white scale-[1.02] shadow-lg shadow-red-500/25"
-              : "text-red-400 hover:bg-red-600/20 hover:text-red-300"
-          }`}
+          className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 transform ${hoveredItem === "logout"
+            ? "bg-red-600 text-white scale-[1.02] shadow-lg shadow-red-500/25"
+            : "text-red-400 hover:bg-red-600/20 hover:text-red-300"
+            }`}
         >
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className="h-5 w-5" 
-            fill="none" 
-            viewBox="0 0 24 24" 
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
             stroke="currentColor"
           >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
             />
           </svg>
           <span className="font-medium text-sm">Çıkış Yap</span>
         </button>
       </div>
-      
+
 
       {/* Custom animations */}
       <style jsx>{`
