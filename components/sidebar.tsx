@@ -35,6 +35,7 @@ import {
   Briefcase,
   NotebookText,
   FilePlus,
+  TrendingDown,
 } from "lucide-react";
 import Image from "next/image";
 import { Admin, AdminPermissions } from "@/lib/types/auth.types";
@@ -220,9 +221,19 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
           icon: Eye,
           path: "/finance/debt-view",
         },
-        { title: "Sabit Varlık Ekle", icon: FilePlus, path: "/finance/add-fixed-asset" },
+
         { title: "Yıllık Bütçe Planlaması Oluştur", icon: FileSpreadsheet, path: "/finance/yearly-budget-planning" },
         { title: "Raporlar", icon: BarChart3, path: "/finance/reports" },
+      ],
+    },
+    {
+      id: "assets",
+      title: "Sabit Varlık Yönetimi",
+      icon: TrendingDown,
+      requiredPermission: "canManageFinance",
+      subItems: [
+        { title: "Yeni Varlık Ekle", icon: FilePlus, path: "/assets/add" },
+        { title: "Varlık Listesi", icon: List, path: "/assets/list" },
       ],
     },
     {

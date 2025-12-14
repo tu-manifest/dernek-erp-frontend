@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://63.179.236.163:8080/api"; // Base API URL
+const API_BASE_URL = "http://localhost:8000/api"; // Base API URL
 const AUTH_API_BASE_URL = "http://localhost:8000/api"; // Auth API URL
 
 export const API_ENDPOINTS = {
@@ -11,6 +11,18 @@ export const API_ENDPOINTS = {
 
     // POST - Register new admin
     register: `${AUTH_API_BASE_URL}/auth/register`,
+
+    // GET - Get all admins (protected)
+    getAllAdmins: `${AUTH_API_BASE_URL}/auth/admins`,
+
+    // GET - Get admin by ID (protected)
+    getAdmin: (id: number) => `${AUTH_API_BASE_URL}/auth/admins/${id}`,
+
+    // PUT - Update admin (protected)
+    updateAdmin: (id: number) => `${AUTH_API_BASE_URL}/auth/admins/${id}`,
+
+    // DELETE - Delete admin (protected)
+    deleteAdmin: (id: number) => `${AUTH_API_BASE_URL}/auth/admins/${id}`,
   },
 
   groups: {

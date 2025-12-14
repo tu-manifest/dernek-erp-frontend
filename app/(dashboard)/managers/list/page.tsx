@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Shield,
   Eye,
   Phone,
-  Mail,
-  User,
-  Calendar,
   Users,
   DollarSign,
+  Calendar,
   Share2,
   FileText,
   Building2,
@@ -17,120 +15,93 @@ import {
   Save,
   X as XIcon,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
-
-// Manager interface
-interface Manager {
-  id: string;
-  fullName: string;
-  username: string;
-  email: string;
-  phone: string;
-  createdAt: string;
-  modules: string[];
-  notes?: string;
-}
-
-// Mock data
-const MOCK_MANAGERS: Manager[] = [
-  {
-    id: "1",
-    fullName: "Ahmet Yılmaz",
-    username: "ahmet_yilmaz",
-    email: "ahmet@dernek.com",
-    phone: "+90 555 123 45 67",
-    createdAt: "2024-01-15",
-    modules: ["members", "donations", "events", "finance"],
-    notes: "Yönetim kurulu başkanı, tüm finansal işlemlerden sorumlu.",
-  },
-  {
-    id: "2",
-    fullName: "Ayşe Demir",
-    username: "ayse_demir",
-    email: "ayse@dernek.com",
-    phone: "+90 555 234 56 78",
-    createdAt: "2024-02-20",
-    modules: ["members", "events", "social"],
-    notes: "Etkinlik koordinatörü ve sosyal medya yöneticisi.",
-  },
-  {
-    id: "3",
-    fullName: "Mehmet Kaya",
-    username: "mehmet_kaya",
-    email: "mehmet@dernek.com",
-    phone: "+90 555 345 67 89",
-    createdAt: "2024-03-10",
-    modules: ["documents", "meetings"],
-    notes: "Döküman arşivi ve toplantı tutanakları sorumlusu.",
-  },
-  {
-    id: "4",
-    fullName: "Fatma Şahin",
-    username: "fatma_sahin",
-    email: "fatma@dernek.com",
-    phone: "+90 555 456 78 90",
-    createdAt: "2024-04-05",
-    modules: ["members", "donations"],
-    notes: "Bağış kampanyaları koordinatörü.",
-  },
-  {
-    id: "5",
-    fullName: "Ali Çelik",
-    username: "ali_celik",
-    email: "ali@dernek.com",
-    phone: "+90 555 567 89 01",
-    createdAt: "2024-05-12",
-    modules: ["managers", "finance", "documents"],
-    notes: "IT ve sistem yönetimi sorumlusu.",
-  },
-];
+import { API_ENDPOINTS } from "@/lib/api/endpoints";
+import {
+  Admin,
+  AdminListResponse,
+  AdminResponse,
+  UpdateAdminPayload,
+  DeleteAdminResponse
+} from "@/lib/types/auth.types";
 
 // Modül bilgileri
 const SYSTEM_MODULES = [
-  { id: "members", name: "Üye Yönetimi", icon: Users },
-  { id: "donations", name: "Bağış Yönetimi", icon: DollarSign },
-  { id: "managers", name: "Yönetici Yönetimi", icon: Shield },
-  { id: "events", name: "Etkinlik Yönetimi", icon: Calendar },
-  { id: "meetings", name: "Toplantı Yönetimi", icon: Briefcase },
-  { id: "social", name: "Sosyal Medya Yönetimi", icon: Share2 },
-  { id: "finance", name: "Finansal İşlemler Yönetimi", icon: Building2 },
-  { id: "documents", name: "Döküman Yönetimi", icon: FileText },
+  { id: "canManageMembers", name: "Üye Yönetimi", icon: Users },
+  { id: "canManageDonations", name: "Bağış Yönetimi", icon: DollarSign },
+  { id: "canManageAdmins", name: "Yönetici Yönetimi", icon: Shield },
+  { id: "canManageEvents", name: "Etkinlik Yönetimi", icon: Calendar },
+  { id: "canManageMeetings", name: "Toplantı Yönetimi", icon: Briefcase },
+  { id: "canManageSocialMedia", name: "Sosyal Medya Yönetimi", icon: Share2 },
+  { id: "canManageFinance", name: "Finansal İşlemler Yönetimi", icon: Building2 },
+  { id: "canManageDocuments", name: "Döküman Yönetimi", icon: FileText },
 ];
 
 export default function ManagerListPage() {
-  const [selectedManager, setSelectedManager] = useState<Manager | null>(null);
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editedData, setEditedData] = useState<Manager | null>(null);
-  const [selectedModules, setSelectedModules] = useState<string[]>([]);
+  const [editedData, setEditedData] = useState<Admin | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [managerToDelete, setManagerToDelete] = useState<Manager | null>(null);
+  const [adminToDelete, setAdminToDelete] = useState<Admin | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleViewDetails = (manager: Manager) => {
-    setSelectedManager(manager);
-    setEditedData({ ...manager });
-    setSelectedModules([...manager.modules]);
+  // Fetch all admins on mount
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const fetchAdmins = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(API_ENDPOINTS.auth.getAllAdmins, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { "Authorization": `Bearer ${token}` }),
+        },
+      });
+
+      const data: AdminListResponse = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast.error(data.message || "Yöneticiler yüklenirken bir hata oluştu");
+        return;
+      }
+
+      setAdmins(data.admins);
+    } catch (error) {
+      console.error("Fetch admins error:", error);
+      toast.error("Yöneticiler yüklenirken bir hata oluştu");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleViewDetails = (admin: Admin) => {
+    setSelectedAdmin(admin);
+    setEditedData({ ...admin });
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setSelectedManager(null);
+    setSelectedAdmin(null);
     setEditedData(null);
-    setSelectedModules([]);
   };
 
-  const handleSaveChanges = () => {
-    if (!editedData) return;
+  const handleSaveChanges = async () => {
+    if (!editedData || !selectedAdmin) return;
 
     // Validation
     if (!editedData.fullName.trim()) {
       toast.error("Ad Soyad alanı boş bırakılamaz!");
-      return;
-    }
-    if (!editedData.username.trim()) {
-      toast.error("Kullanıcı adı boş bırakılamaz!");
       return;
     }
     if (!editedData.email.trim() || !editedData.email.includes("@")) {
@@ -142,38 +113,121 @@ export default function ManagerListPage() {
       return;
     }
 
-    // Simulate save
-    console.log("Kaydedilen veri:", { ...editedData, modules: selectedModules });
-    toast.success("Yönetici bilgileri başarıyla güncellendi!");
-    handleCloseModal();
-  };
+    setIsSaving(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const payload: UpdateAdminPayload = {
+        fullName: editedData.fullName,
+        email: editedData.email,
+        phone: editedData.phone,
+        notes: editedData.notes,
+        canManageMembers: editedData.permissions.canManageMembers,
+        canManageDonations: editedData.permissions.canManageDonations,
+        canManageAdmins: editedData.permissions.canManageAdmins,
+        canManageEvents: editedData.permissions.canManageEvents,
+        canManageMeetings: editedData.permissions.canManageMeetings,
+        canManageSocialMedia: editedData.permissions.canManageSocialMedia,
+        canManageFinance: editedData.permissions.canManageFinance,
+        canManageDocuments: editedData.permissions.canManageDocuments,
+      };
 
-  const toggleModule = (moduleId: string) => {
-    if (selectedModules.includes(moduleId)) {
-      setSelectedModules(selectedModules.filter((m) => m !== moduleId));
-    } else {
-      setSelectedModules([...selectedModules, moduleId]);
+      const response = await fetch(API_ENDPOINTS.auth.updateAdmin(selectedAdmin.id), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { "Authorization": `Bearer ${token}` }),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data: AdminResponse = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast.error(data.message || "Yönetici güncellenirken bir hata oluştu");
+        return;
+      }
+
+      toast.success("Yönetici bilgileri başarıyla güncellendi!");
+
+      // Update local state
+      setAdmins(prev => prev.map(a => a.id === selectedAdmin.id ? data.admin : a));
+      handleCloseModal();
+    } catch (error) {
+      console.error("Update admin error:", error);
+      toast.error("Yönetici güncellenirken bir hata oluştu");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleDeleteManager = (manager: Manager) => {
-    setManagerToDelete(manager);
+  const togglePermission = (permissionId: string) => {
+    if (!editedData) return;
+
+    const permissionKey = permissionId as keyof typeof editedData.permissions;
+    setEditedData({
+      ...editedData,
+      permissions: {
+        ...editedData.permissions,
+        [permissionKey]: !editedData.permissions[permissionKey],
+      },
+    });
+  };
+
+  const handleDeleteAdmin = (admin: Admin) => {
+    setAdminToDelete(admin);
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (managerToDelete) {
-      console.log("Silinen yönetici:", managerToDelete);
-      toast.success(`${managerToDelete.fullName} başarıyla silindi!`);
+  const confirmDelete = async () => {
+    if (!adminToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(API_ENDPOINTS.auth.deleteAdmin(adminToDelete.id), {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { "Authorization": `Bearer ${token}` }),
+        },
+      });
+
+      const data: DeleteAdminResponse = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast.error(data.message || "Yönetici silinirken bir hata oluştu");
+        return;
+      }
+
+      toast.success(`${adminToDelete.fullName} başarıyla silindi!`);
+
+      // Update local state
+      setAdmins(prev => prev.filter(a => a.id !== adminToDelete.id));
       setIsDeleteModalOpen(false);
-      setManagerToDelete(null);
+      setAdminToDelete(null);
+    } catch (error) {
+      console.error("Delete admin error:", error);
+      toast.error("Yönetici silinirken bir hata oluştu");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const cancelDelete = () => {
     setIsDeleteModalOpen(false);
-    setManagerToDelete(null);
+    setAdminToDelete(null);
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+          <p className="text-gray-600">Yöneticiler yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -187,8 +241,6 @@ export default function ManagerListPage() {
         </p>
       </div>
 
-    
-
       {/* Table */}
       <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
         <div className="overflow-x-auto">
@@ -201,50 +253,57 @@ export default function ManagerListPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {MOCK_MANAGERS.map((manager, index) => (
-                <tr
-                  key={manager.id}
-                  className={`transition-colors ${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-blue-50`}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        {manager.fullName.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{manager.fullName}</p>
-                        <p className="text-sm text-gray-500">@{manager.username}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Phone size={16} className="text-gray-400" />
-                      <span className="text-sm">{manager.phone}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleViewDetails(manager)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Detay Gör"
-                      >
-                        <Eye size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteManager(manager)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Sil"
-                      >
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
+              {admins.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                    Henüz yönetici bulunmuyor.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                admins.map((admin, index) => (
+                  <tr
+                    key={admin.id}
+                    className={`transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      } hover:bg-blue-50`}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          {admin.fullName.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{admin.fullName}</p>
+                          <p className="text-sm text-gray-500">{admin.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Phone size={16} className="text-gray-400" />
+                        <span className="text-sm">{admin.phone}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleViewDetails(admin)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Detay Gör"
+                        >
+                          <Eye size={20} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAdmin(admin)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Sil"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -281,20 +340,6 @@ export default function ManagerListPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kullanıcı Adı
-                  </label>
-                  <input
-                    type="text"
-                    value={editedData.username}
-                    onChange={(e) =>
-                      setEditedData({ ...editedData, username: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Kullanıcı Adı"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     E-posta
                   </label>
                   <input
@@ -321,17 +366,19 @@ export default function ManagerListPage() {
                     placeholder="Telefon"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kayıt Tarihi
-                  </label>
-                  <input
-                    type="text"
-                    value={new Date(editedData.createdAt).toLocaleDateString("tr-TR")}
-                    disabled
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
-                  />
-                </div>
+                {editedData.createdAt && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kayıt Tarihi
+                    </label>
+                    <input
+                      type="text"
+                      value={new Date(editedData.createdAt).toLocaleDateString("tr-TR")}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -341,22 +388,25 @@ export default function ManagerListPage() {
                 Modül Yetkileri
               </h3>
               <div className="space-y-2">
-                {SYSTEM_MODULES.map((module) => (
-                  <label
-                    key={module.id}
-                    className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedModules.includes(module.id)}
-                      onChange={() => toggleModule(module.id)}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm font-medium text-gray-900">
-                      {module.name}
-                    </span>
-                  </label>
-                ))}
+                {SYSTEM_MODULES.map((module) => {
+                  const permissionKey = module.id as keyof typeof editedData.permissions;
+                  return (
+                    <label
+                      key={module.id}
+                      className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={editedData.permissions[permissionKey]}
+                        onChange={() => togglePermission(module.id)}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm font-medium text-gray-900">
+                        {module.name}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
@@ -380,17 +430,28 @@ export default function ManagerListPage() {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleCloseModal}
-                className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold flex items-center justify-center gap-2"
+                disabled={isSaving}
+                className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <XIcon size={20} />
                 İptal
               </button>
               <button
                 onClick={handleSaveChanges}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center justify-center gap-2"
+                disabled={isSaving}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Save size={20} />
-                Değişiklikleri Kaydet
+                {isSaving ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Kaydediliyor...
+                  </>
+                ) : (
+                  <>
+                    <Save size={20} />
+                    Değişiklikleri Kaydet
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -404,30 +465,38 @@ export default function ManagerListPage() {
         title="Yönetici Silme Onayı"
         size="sm"
       >
-        {managerToDelete && (
+        {adminToDelete && (
           <div className="space-y-6">
             <div className="text-center">
-            
               <p className="text-lg text-gray-900 mb-2">
-                Bu kullanıcıyı silmek istiyor musunuz?
+                Bu yöneticiyi silmek istediğinize emin misiniz?
               </p>
               <p className="text-sm text-gray-600">
-                <span className="font-semibold">{managerToDelete.fullName}</span> adlı yönetici kalıcı olarak silinecektir.
+                <span className="font-semibold">{adminToDelete.fullName}</span> adlı yönetici kalıcı olarak silinecektir.
               </p>
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={cancelDelete}
-                className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                disabled={isDeleting}
+                className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50"
               >
                 Hayır
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                disabled={isDeleting}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Evet
+                {isDeleting ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Siliniyor...
+                  </>
+                ) : (
+                  "Evet"
+                )}
               </button>
             </div>
           </div>

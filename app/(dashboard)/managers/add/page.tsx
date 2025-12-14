@@ -101,7 +101,6 @@ const SYSTEM_MODULES: Module[] = [
 ];
 
 interface FormData {
-  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -118,7 +117,6 @@ interface FormErrors {
 
 export default function CreateManagerPage() {
   const [formData, setFormData] = useState<FormData>({
-    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -144,7 +142,8 @@ export default function CreateManagerPage() {
 
     // Hata mesajını temizle
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
+      const { [field]: _, ...rest } = errors;
+      setErrors(rest);
     }
   };
 
@@ -173,15 +172,6 @@ export default function CreateManagerPage() {
   // Form validasyonu
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-
-    // Kullanıcı adı
-    if (!formData.username.trim()) {
-      newErrors.username = "Kullanıcı adı gereklidir";
-    } else if (formData.username.length < 3) {
-      newErrors.username = "Kullanıcı adı en az 3 karakter olmalıdır";
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = "Sadece harf, rakam ve alt çizgi kullanılabilir";
-    }
 
     // E-posta
     if (!formData.email.trim()) {
@@ -300,7 +290,6 @@ export default function CreateManagerPage() {
   // Formu sıfırla
   const resetForm = () => {
     setFormData({
-      username: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -427,32 +416,6 @@ export default function CreateManagerPage() {
               </div>
 
               <div className="space-y-4">
-                {/* Kullanıcı Adı */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kullanıcı Adı <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.username}
-                    onChange={(e) =>
-                      handleInputChange("username", e.target.value.toLowerCase())
-                    }
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.username ? "border-red-500" : "border-gray-300"
-                      }`}
-                    placeholder="ahmet_yilmaz"
-                  />
-                  {errors.username && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
-                      {errors.username}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Sadece harf, rakam ve alt çizgi (_) kullanılabilir
-                  </p>
-                </div>
-
                 {/* Şifre */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -488,23 +451,23 @@ export default function CreateManagerPage() {
                         <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
                             className={`h-full transition-all ${passwordStrength === "Zayıf"
-                                ? "w-1/4 bg-red-500"
-                                : passwordStrength === "Orta"
-                                  ? "w-1/2 bg-yellow-500"
-                                  : passwordStrength === "İyi"
-                                    ? "w-3/4 bg-blue-500"
-                                    : "w-full bg-green-500"
+                              ? "w-1/4 bg-red-500"
+                              : passwordStrength === "Orta"
+                                ? "w-1/2 bg-yellow-500"
+                                : passwordStrength === "İyi"
+                                  ? "w-3/4 bg-blue-500"
+                                  : "w-full bg-green-500"
                               }`}
                           />
                         </div>
                         <span
                           className={`text-xs font-medium ${passwordStrength === "Zayıf"
-                              ? "text-red-600"
-                              : passwordStrength === "Orta"
-                                ? "text-yellow-600"
-                                : passwordStrength === "İyi"
-                                  ? "text-blue-600"
-                                  : "text-green-600"
+                            ? "text-red-600"
+                            : passwordStrength === "Orta"
+                              ? "text-yellow-600"
+                              : passwordStrength === "İyi"
+                                ? "text-blue-600"
+                                : "text-green-600"
                             }`}
                         >
                           {passwordStrength}
@@ -591,8 +554,8 @@ export default function CreateManagerPage() {
                       key={module.id}
                       onClick={() => toggleModule(module.id)}
                       className={`p-4 border rounded-lg cursor-pointer transition-all ${isSelected
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300 bg-white"
                         }`}
                     >
                       <div className="flex items-start gap-3">

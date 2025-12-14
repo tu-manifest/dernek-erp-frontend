@@ -63,3 +63,35 @@ export interface RegisterResponse {
     message: string;
     admin?: Admin;
 }
+
+export interface AdminListResponse {
+    success: boolean;
+    message: string;
+    admins: Admin[];
+}
+
+export interface AdminResponse {
+    success: boolean;
+    message: string;
+    admin: Admin;
+}
+
+export interface UpdateAdminPayload {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    notes?: string;
+    canManageMembers?: boolean;
+    canManageDonations?: boolean;
+    canManageAdmins?: boolean;
+    canManageEvents?: boolean;
+    canManageMeetings?: boolean;
+    canManageSocialMedia?: boolean;
+    canManageFinance?: boolean;
+    canManageDocuments?: boolean;
+}
+
+export interface DeleteAdminResponse {
+    success: boolean;
+    message: string;
+}
