@@ -432,8 +432,25 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         ))}
       </nav>
 
-      {/* Footer - Çıkış Butonu */}
-      <div className="p-4 border-t border-slate-700/50 bg-slate-900/50">
+      {/* Footer - Ayarlar ve Çıkış */}
+      <div className="p-4 border-t border-slate-700/50 bg-slate-900/50 space-y-2">
+        {/* Ayarlar Butonu */}
+        <button
+          onClick={() => router.push("/settings")}
+          onMouseEnter={() => setHoveredItem("settings")}
+          onMouseLeave={() => setHoveredItem(null)}
+          className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 transform ${pathname === "/settings"
+            ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25"
+            : hoveredItem === "settings"
+              ? "bg-slate-700/70 text-white scale-[1.01] shadow-lg"
+              : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+            }`}
+        >
+          <Settings size={20} className="flex-shrink-0" />
+          <span className="font-medium text-sm">Ayarlar</span>
+        </button>
+
+        {/* Çıkış Butonu */}
         <button
           onClick={() => {
             localStorage.removeItem("authToken");
