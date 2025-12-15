@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { Info, Calendar, Banknote, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+// Oluşturduğunuz servis dosyasını import ediyoruz
+import { createDonationCampaign } from "@/lib/api/donationService"; 
 
 export default function DonationCampaignForm() {
   const router = useRouter();
+
+  // Yükleme durumu (API isteği sırasında butonu devre dışı bırakmak için)
+  const [loading, setLoading] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -13,12 +18,12 @@ export default function DonationCampaignForm() {
     type: "",
     targetAmount: "",
     description: "",
-    startDate: new Date().toISOString().split("T")[0],
+    startDate: new Date().toISOString().split("T")[0], // Bugünün tarihi varsayılan
     endDate: "",
     iban: ""
   });
 
-  // Error state
+  // Hata state'i
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Kampanya türleri
@@ -43,16 +48,18 @@ export default function DonationCampaignForm() {
       [name]: value
     }));
 
-    // Varsa hatayı temizle
+    // Kullanıcı yazmaya başladığında ilgili hatayı temizle
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: "" }));
     }
   };
 
-  // IBAN validasyonu
+  // IBAN validasyonu (Basit TR kontrolü)
   const validateIBAN = (iban: string): boolean => {
+    // Boşlukları temizle ve kontrol et
+    const cleanIban = iban.replace(/\s/g, "");
     const ibanRegex = /^TR[0-9]{24}$/;
-    return ibanRegex.test(iban.replace(/\s/g, ""));
+    return ibanRegex.test(cleanIban);
   };
 
   // Form validasyonu
@@ -69,32 +76,70 @@ export default function DonationCampaignForm() {
 
     if (!formData.endDate) {
       newErrors.endDate = "Bitiş tarihi zorunludur";
+    } else if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+       newErrors.endDate = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır";
     }
 
     if (!formData.iban) {
       newErrors.iban = "IBAN zorunludur";
     } else if (!validateIBAN(formData.iban)) {
-      newErrors.iban = "Geçersiz IBAN formatı";
+      newErrors.iban = "Geçersiz IBAN formatı (TR ile başlamalı ve 26 karakter olmalı)";
+    }
+
+    if (formData.targetAmount && parseFloat(formData.targetAmount) <= 0) {
+        newErrors.targetAmount = "Hedef miktar 0'dan büyük olmalıdır";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Form gönderimi
-  const handleSubmit = (e: React.FormEvent) => {
+  // Form gönderimi (API Entegrasyonu)
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (validateForm()) {
-      console.log("Form Data:", formData);
-      alert("Kampanya başarıyla oluşturuldu!");
-      router.push("/donations/list");
+    // 1. Validasyon kontrolü
+    if (!validateForm()) {
+      return; 
+    }
+    
+    // 2. Yükleme durumunu başlat
+    setLoading(true); 
+
+    try {
+        // 3. Backend'in beklediği formata dönüştürme
+        const payload = {
+            name: formData.name,
+            type: formData.type,
+            // String gelen tutarı sayıya çevir
+            targetAmount: formData.targetAmount ? parseFloat(formData.targetAmount) : 0, 
+            description: formData.description,
+            // Backend modelindeki 'duration' alanı için tarihleri birleştiriyoruz
+            duration: `${formData.startDate} - ${formData.endDate}`, 
+            iban: formData.iban,
+        };
+        
+        // 4. Servis üzerinden API çağrısı yap
+        await createDonationCampaign(payload);
+
+        // 5. Başarılı işlem sonrası
+        alert("Kampanya başarıyla oluşturuldu!");
+        router.push("/donations/list"); // Listeleme sayfasına yönlendir (URL'nizi kontrol edin)
+        router.refresh(); // Listeyi güncellemek için sayfayı yenilemeyi tetikle
+        
+    } catch (error) {
+        // 6. Hata yakalama
+        console.error("Kampanya oluşturma hatası:", error);
+        alert(`Kampanya oluşturulamadı: ${(error as Error).message || "Sunucu hatası oluştu."}`);
+    } finally {
+        // 7. İşlem bitince yükleme durumunu kapat
+        setLoading(false); 
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-      {/* Temel Bilgiler */}
+      {/* --- BÖLÜM 1: Temel Bilgiler --- */}
       <div className="border-b pb-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <Info size={20} />
@@ -112,9 +157,10 @@ export default function DonationCampaignForm() {
               name="name"
               value={formData.name}
               onChange={handleChange}
+              disabled={loading}
               className={`w-full px-4 py-2 border rounded-lg ${
                 errors.name ? "border-red-500" : "border-gray-300"
-              } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed`}
               placeholder="Örn: Eğitim Destek Kampanyası"
             />
             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -129,9 +175,10 @@ export default function DonationCampaignForm() {
               name="type"
               value={formData.type}
               onChange={handleChange}
+              disabled={loading}
               className={`w-full px-4 py-2 border rounded-lg ${
                 errors.type ? "border-red-500" : "border-gray-300"
-              } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
             >
               <option value="">Kampanya Türü Seçin</option>
               {campaignTypes.map(type => (
@@ -153,16 +200,20 @@ export default function DonationCampaignForm() {
               name="targetAmount"
               value={formData.targetAmount}
               onChange={handleChange}
+              disabled={loading}
               min="0"
               step="0.01"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-lg ${
+                errors.targetAmount ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
               placeholder="0.00"
             />
+             {errors.targetAmount && <p className="text-red-500 text-sm mt-1">{errors.targetAmount}</p>}
           </div>
         </div>
       </div>
 
-      {/* Tarih Bilgileri */}
+      {/* --- BÖLÜM 2: Tarih Bilgileri --- */}
       <div className="border-b pb-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <Calendar size={20} />
@@ -180,7 +231,7 @@ export default function DonationCampaignForm() {
               name="startDate"
               value={formData.startDate}
               readOnly
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed text-gray-500"
             />
           </div>
 
@@ -194,17 +245,18 @@ export default function DonationCampaignForm() {
               name="endDate"
               value={formData.endDate}
               onChange={handleChange}
+              disabled={loading}
               min={formData.startDate}
               className={`w-full px-4 py-2 border rounded-lg ${
                 errors.endDate ? "border-red-500" : "border-gray-300"
-              } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
             />
             {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
           </div>
         </div>
       </div>
 
-      {/* IBAN ve Açıklama */}
+      {/* --- BÖLÜM 3: IBAN ve Açıklama --- */}
       <div>
         {/* IBAN */}
         <div className="mb-4">
@@ -220,9 +272,10 @@ export default function DonationCampaignForm() {
             name="iban"
             value={formData.iban}
             onChange={handleChange}
+            disabled={loading}
             className={`w-full px-4 py-2 border rounded-lg ${
               errors.iban ? "border-red-500" : "border-gray-300"
-            } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+            } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
             placeholder="TR00 0000 0000 0000 0000 0000 00"
             maxLength={32}
           />
@@ -238,21 +291,42 @@ export default function DonationCampaignForm() {
             name="description"
             value={formData.description}
             onChange={handleChange}
+            disabled={loading}
             rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
             placeholder="Kampanya hakkında detaylı bilgi verin..."
           />
         </div>
       </div>
 
-      {/* Butonlar */}
+      {/* --- BÖLÜM 4: Butonlar --- */}
       <div className="flex justify-center pt-6">
         <button
           type="submit"
-          className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-12 py-4 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-800 transform hover:scale-105 transition-all duration-200 shadow-lg flex items-center space-x-2"
+          disabled={loading}
+          className={`
+            bg-gradient-to-r text-white px-12 py-4 rounded-lg font-semibold text-lg shadow-lg flex items-center space-x-2 transition-all duration-200
+            ${loading 
+                ? 'from-gray-400 to-gray-500 cursor-not-allowed transform-none' 
+                : 'from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 hover:scale-105'
+            }
+          `}
         >
-          <Check size={24} />
-          <span>Oluştur</span>
+          {loading ? (
+            // Basit bir loading spinner simülasyonu veya metni
+            <span className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Oluşturuluyor...
+            </span>
+          ) : (
+            <>
+              <Check size={24} />
+              <span>Oluştur</span>
+            </>
+          )}
         </button>
       </div>
     </form>

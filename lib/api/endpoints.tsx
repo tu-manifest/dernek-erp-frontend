@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://63.179.236.163:8080/api"; // Base API URL
+// lib/api/endpoint.tsx
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"; // Base API URL
 
 export const API_ENDPOINTS = {
   groups: {
@@ -36,5 +38,20 @@ export const API_ENDPOINTS = {
 
     // DELETE - Üye kalıcı olarak sil
     deleteMember: (id: string) => `${API_BASE_URL}/members/${id}`,
+  },
+
+  // 🚀 YENİ EKLENEN KISIM 🚀
+  donations: {
+    // CREATE - Yeni kampanya oluştur (POST /donations)
+    createCampaign: `${API_BASE_URL}/donations`,
+
+    // READ - Tüm kampanyaları getir (GET /donations)
+    getAllCampaigns: `${API_BASE_URL}/donations`,
+
+    // READ - ID'ye göre kampanya getir (GET /donations/:id)
+    getCampaignById: (id: string) => `${API_BASE_URL}/donations/${id}`,
+    
+    // BACKEND'DEKİ DİĞER METOTLARINIZI BURAYA EKLERSİNİZ
+    // ...
   },
 };
