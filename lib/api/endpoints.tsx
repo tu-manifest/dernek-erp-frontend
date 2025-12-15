@@ -1,8 +1,35 @@
-// lib/api/endpoint.tsx
+// lib/api/endpoints.tsx
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"; // Base API URL
+//Genel API için
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"; 
+
+//Auth işlemleri farklı bir portta çalıştırmak için sanırsam
+const AUTH_API_BASE_URL = "http://localhost:8000/api"; 
 
 export const API_ENDPOINTS = {
+  auth: {
+    // POST - Login
+    login: `${AUTH_API_BASE_URL}/auth/login`,
+
+    // GET - Get current admin (requires Bearer token)
+    me: `${AUTH_API_BASE_URL}/auth/me`,
+
+    // POST - Register new admin
+    register: `${AUTH_API_BASE_URL}/auth/register`,
+
+    // GET - Get all admins (protected)
+    getAllAdmins: `${AUTH_API_BASE_URL}/auth/admins`,
+
+    // GET - Get admin by ID (protected)
+    getAdmin: (id: number) => `${AUTH_API_BASE_URL}/auth/admins/${id}`,
+
+    // PUT - Update admin (protected)
+    updateAdmin: (id: number) => `${AUTH_API_BASE_URL}/auth/admins/${id}`,
+
+    // DELETE - Delete admin (protected)
+    deleteAdmin: (id: number) => `${AUTH_API_BASE_URL}/auth/admins/${id}`,
+  },
+
   groups: {
     // CREATE - Yeni grup oluştur
     addNewGroup: `${API_BASE_URL}/groups/add-new-group`,
@@ -40,7 +67,7 @@ export const API_ENDPOINTS = {
     deleteMember: (id: string) => `${API_BASE_URL}/members/${id}`,
   },
 
-  // 🚀 YENİ EKLENEN KISIM 🚀
+  // 🚀 SENİN EKLEDİĞİN DONATIONS KISMI
   donations: {
     // CREATE - Yeni kampanya oluştur (POST /donations)
     createCampaign: `${API_BASE_URL}/donations`,
@@ -50,8 +77,5 @@ export const API_ENDPOINTS = {
 
     // READ - ID'ye göre kampanya getir (GET /donations/:id)
     getCampaignById: (id: string) => `${API_BASE_URL}/donations/${id}`,
-    
-    // BACKEND'DEKİ DİĞER METOTLARINIZI BURAYA EKLERSİNİZ
-    // ...
   },
 };

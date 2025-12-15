@@ -1,7 +1,13 @@
+'use client';
+
 import React from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Target, BarChart, HardHat } from 'lucide-react';
 import MetricCard from '@/components/metricCard';
 import MonthlyTrendTable from '@/components/monthlyTable';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 // Temsili Veriler
 const financialData = {
   currentMonthNetBalance: 28500,
@@ -103,17 +109,63 @@ const FinancialReportDashboard = () => {
             {/* Gider Dağılımı */}
             <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Giderlerin Fonksiyonel Dağılımı</h3>
-              {/* Pasta Grafik Yer Tutucusu */}
-              <div className="h-40 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 mb-4">
-                [Pasta Grafik/Halka Grafik]
+              {/* Doughnut Chart */}
+              <div className="h-48 mb-4 flex items-center justify-center">
+                <Doughnut 
+                  data={{
+                    labels: financialData.expenseDistribution.map(item => item.name),
+                    datasets: [{
+                      data: financialData.expenseDistribution.map(item => item.amount),
+                      backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(249, 115, 22, 0.8)',
+                      ],
+                      borderColor: [
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(16, 185, 129, 1)',
+                        'rgba(249, 115, 22, 1)',
+                      ],
+                      borderWidth: 2,
+                    }]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            return label + ': ' + formatCurrency(value);
+                          }
+                        }
+                      }
+                    }
+                  }}
+                />
               </div>
               <ul className="text-sm space-y-1">
-                {financialData.expenseDistribution.map((item, index) => (
-                  <li key={index} className="flex justify-between">
-                    <span>{item.name}</span>
-                    <span className="font-medium text-gray-700">{formatCurrency(item.amount)}</span>
-                  </li>
-                ))}
+                {financialData.expenseDistribution.map((item, index) => {
+                  const colors = [
+                    'bg-blue-500',
+                    'bg-green-500',
+                    'bg-orange-500',
+                  ];
+                  return (
+                    <li key={index} className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded ${colors[index]}`}></div>
+                        <span>{item.name}</span>
+                      </div>
+                      <span className="font-medium text-gray-700">{formatCurrency(item.amount)}</span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
             
@@ -147,6 +199,7 @@ const FinancialReportDashboard = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kalem</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Planlanan</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Gerçekleşen</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Uyum %</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -158,11 +211,14 @@ const FinancialReportDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.item}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{formatCurrency(item.planned)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{formatCurrency(item.actual)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex items-center space-x-2">
-                          
-                         
-                        </div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                        <span className={`font-semibold ${
+                          compliance >= 100 ? 'text-green-600' : 
+                          compliance >= 80 ? 'text-yellow-600' : 
+                          'text-red-600'
+                        }`}>
+                          {compliance.toFixed(1)}%
+                        </span>
                       </td>
                     </tr>
                   );

@@ -2,8 +2,12 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Send } from "lucide-react";
 import Image from "next/image";
+import Modal from "@/components/Modal";
+import { toast } from "sonner";
+import { API_ENDPOINTS } from "@/lib/api/endpoints";
+import { AuthResponse } from "@/lib/types/auth.types";
 
 interface LoginFormData {
   email: string;
@@ -25,10 +29,14 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetEmailError, setResetEmailError] = useState("");
+  const [isResetLoading, setIsResetLoading] = useState(false);
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    
+
     // Hata mesajını temizle
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -56,6 +64,35 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleForgotPassword = async () => {
+    // Hata kontrolleri
+    if (!resetEmail.trim()) {
+      setResetEmailError("E-posta adresi gereklidir");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
+      setResetEmailError("Geçerli bir e-posta adresi giriniz");
+      return;
+    }
+
+    setResetEmailError("");
+    setIsResetLoading(true);
+
+    try {
+      // Simüle edilmiş API çağrısı
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      toast.success(`Şifre sıfırlama bağlantısı ${resetEmail} adresine gönderildi!`);
+      setIsForgotPasswordModalOpen(false);
+      setResetEmail("");
+      setResetEmailError("");
+    } catch (error) {
+      toast.error("Bir hata oluştu. Lütfen tekrar deneyiniz.");
+    } finally {
+      setIsResetLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -65,23 +102,38 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      // API çağrısı simülasyonu
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Real API call
+      const response = await fetch(API_ENDPOINTS.auth.login, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-      // Geçici: Demo giriş kontrolü
-      if (formData.email === "admin@derp.com" && formData.password === "123456") {
-        // Token'ı localStorage'a kaydet
-        localStorage.setItem("authToken", "demo-token-12345");
-        localStorage.setItem("userEmail", formData.email);
-        
-        // Dashboard'a yönlendir
-        router.push("/dashboard");
-      } else {
+      const data: AuthResponse = await response.json();
+
+      if (!response.ok || !data.success) {
         setErrors({
-          general: "E-posta veya şifre hatalı. Lütfen tekrar deneyiniz.",
+          general: data.message || "E-posta veya şifre hatalı. Lütfen tekrar deneyiniz.",
         });
+        return;
       }
+
+      // Save token and admin info to localStorage
+      localStorage.setItem("authToken", data.token);
+      localStorage.setItem("admin", JSON.stringify(data.admin));
+      localStorage.setItem("userEmail", data.admin.email);
+
+      toast.success("Giriş başarılı!");
+
+      // Redirect to dashboard
+      router.push("/dashboard");
     } catch (error) {
+      console.error("Login error:", error);
       setErrors({
         general: "Giriş yapılırken bir hata oluştu. Lütfen tekrar deneyiniz.",
       });
@@ -140,9 +192,8 @@ export default function LoginPage() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-gray-50 ${
-                    errors.email ? "border-red-500" : "border-gray-200"
-                  }`}
+                  className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-gray-50 ${errors.email ? "border-red-500" : "border-gray-200"
+                    }`}
                   placeholder="ornek@derp.com"
                   disabled={isLoading}
                 />
@@ -169,9 +220,8 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
-                  className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-gray-50 ${
-                    errors.password ? "border-red-500" : "border-gray-200"
-                  }`}
+                  className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-gray-50 ${errors.password ? "border-red-500" : "border-gray-200"
+                    }`}
                   placeholder="••••••••"
                   disabled={isLoading}
                 />
@@ -190,6 +240,18 @@ export default function LoginPage() {
                   {errors.password}
                 </p>
               )}
+            </div>
+
+            {/* Şifremi Unuttum */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsForgotPasswordModalOpen(true)}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                disabled={isLoading}
+              >
+                Şifremi Unuttum?
+              </button>
             </div>
 
             {/* Giriş Butonu */}
@@ -248,6 +310,95 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      {/* Şifre Sıfırlama Modalı */}
+      <Modal
+        isOpen={isForgotPasswordModalOpen}
+        onClose={() => {
+          setIsForgotPasswordModalOpen(false);
+          setResetEmail("");
+          setResetEmailError("");
+        }}
+        title="Şifremi Unuttum"
+        size="sm"
+      >
+        <div className="space-y-6">
+          <div className="text-center">
+
+            <p className="text-lg text-gray-600 mb-4">
+              E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              E-posta Adresi
+            </label>
+            <div className="relative">
+              <Mail
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                size={20}
+              />
+              <input
+                type="email"
+                value={resetEmail}
+                onChange={(e) => {
+                  setResetEmail(e.target.value);
+                  if (resetEmailError) setResetEmailError("");
+                }}
+                className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${resetEmailError ? "border-red-500" : "border-gray-300"
+                  }`}
+                placeholder="ornek@derp.com"
+                disabled={isResetLoading}
+              />
+            </div>
+            {resetEmailError && (
+              <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                <AlertCircle size={14} />
+                {resetEmailError}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <button
+              onClick={handleForgotPassword}
+              disabled={isResetLoading}
+              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isResetLoading ? (
+                <>
+                  <svg
+                    className="animate-spin h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Gönderiliyor...
+                </>
+              ) : (
+                <>
+                  Gönder
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
