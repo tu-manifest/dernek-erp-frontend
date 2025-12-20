@@ -2,12 +2,32 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Send } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Send, Play } from "lucide-react";
 import Image from "next/image";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
-import { AuthResponse } from "@/lib/types/auth.types";
+import { AuthResponse, Admin } from "@/lib/types/auth.types";
+
+// Demo admin with all permissions
+const DEMO_ADMIN: Admin = {
+  id: -1,
+  fullName: "Demo Kullanıcı",
+  email: "admin@derp.com",
+  phone: "0000000000",
+  notes: "Bu bir demo hesabıdır.",
+  permissions: {
+    canManageMembers: true,
+    canManageDonations: true,
+    canManageAdmins: true,
+    canManageEvents: true,
+    canManageMeetings: true,
+    canManageSocialMedia: true,
+    canManageFinance: true,
+    canManageDocuments: true,
+  },
+  isActive: true,
+};
 
 interface LoginFormData {
   email: string;
@@ -29,6 +49,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetEmailError, setResetEmailError] = useState("");
@@ -62,6 +83,25 @@ export default function LoginPage() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleDemoLogin = () => {
+    setIsDemoLoading(true);
+    try {
+      // Demo login directly to localStorage (no AuthProvider needed)
+      const demoToken = "demo-token-" + Date.now();
+      localStorage.setItem("authToken", demoToken);
+      localStorage.setItem("admin", JSON.stringify(DEMO_ADMIN));
+      localStorage.setItem("userEmail", DEMO_ADMIN.email);
+      localStorage.setItem("isDemo", "true");
+
+      toast.success("Demo hesabıyla giriş yapıldı!");
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Demo login error:", error);
+      toast.error("Demo girişi sırasında bir hata oluştu.");
+      setIsDemoLoading(false);
+    }
   };
 
   const handleForgotPassword = async () => {
@@ -289,6 +329,56 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Demo Giriş Butonu */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-3 bg-white text-gray-500">veya</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={isLoading || isDemoLoading}
+              className="mt-4 w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-4 rounded-xl font-semibold text-base hover:from-amber-600 hover:to-orange-700 focus:ring-4 focus:ring-amber-300 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] flex items-center justify-center gap-2"
+            >
+              {isDemoLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Demo Girişi Yapılıyor...
+                </span>
+              ) : (
+                <>
+                  <Play size={20} />
+                  Demo Hesap ile Giriş Yap
+                </>
+              )}
+            </button>
+          </div>
 
           {/* Demo Bilgileri */}
           <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">

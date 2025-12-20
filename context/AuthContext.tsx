@@ -9,7 +9,9 @@ interface AuthContextType {
     token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
+    isDemo: boolean;
     login: (payload: LoginPayload) => Promise<AuthResponse>;
+    demoLogin: () => void;
     logout: () => void;
     checkAuth: () => Promise<boolean>;
     hasPermission: (permission: keyof AdminPermissions) => boolean;
@@ -17,10 +19,36 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Demo admin with all permissions
+const DEMO_ADMIN: Admin = {
+    id: -1,
+    fullName: "Demo Kullanıcı",
+    email: "admin@derp.com",
+    phone: "0000000000",
+    notes: "Bu bir demo hesabıdır.",
+    permissions: {
+        canManageMembers: true,
+        canManageDonations: true,
+        canManageAdmins: true,
+        canManageEvents: true,
+        canManageMeetings: true,
+        canManageSocialMedia: true,
+        canManageFinance: true,
+        canManageDocuments: true,
+    },
+    isActive: true,
+};
+
+const DEMO_CREDENTIALS = {
+    email: "admin@derp.com",
+    password: "123456",
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [admin, setAdmin] = useState<Admin | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isDemo, setIsDemo] = useState(false);
 
     // Check if user is authenticated
     const isAuthenticated = !!token && !!admin;
@@ -29,9 +57,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const storedToken = localStorage.getItem("authToken");
         const storedAdmin = localStorage.getItem("admin");
+        const storedIsDemo = localStorage.getItem("isDemo");
 
         if (storedToken) {
             setToken(storedToken);
+            if (storedIsDemo === "true") {
+                setIsDemo(true);
+            }
             if (storedAdmin) {
                 try {
                     setAdmin(JSON.parse(storedAdmin));
@@ -73,13 +105,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return data;
     }, []);
 
+    // Demo login function
+    const demoLogin = useCallback(() => {
+        const demoToken = "demo-token-" + Date.now();
+        setToken(demoToken);
+        setAdmin(DEMO_ADMIN);
+        setIsDemo(true);
+        localStorage.setItem("authToken", demoToken);
+        localStorage.setItem("admin", JSON.stringify(DEMO_ADMIN));
+        localStorage.setItem("userEmail", DEMO_ADMIN.email);
+        localStorage.setItem("isDemo", "true");
+    }, []);
+
     // Logout function
     const logout = useCallback(() => {
         setToken(null);
         setAdmin(null);
+        setIsDemo(false);
         localStorage.removeItem("authToken");
         localStorage.removeItem("admin");
         localStorage.removeItem("userEmail");
+        localStorage.removeItem("isDemo");
     }, []);
 
     // Check auth with /me endpoint
@@ -136,7 +182,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         isLoading,
         isAuthenticated,
+        isDemo,
         login,
+        demoLogin,
         logout,
         checkAuth,
         hasPermission,

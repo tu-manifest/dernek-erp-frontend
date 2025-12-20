@@ -16,7 +16,7 @@ export interface CampaignPayload {
 // 1. Yeni Kampanya Oluşturma Fonksiyonu (POST)
 export const createDonationCampaign = async (data: CampaignPayload) => {
   const url = API_ENDPOINTS.donations.createCampaign;
-  nd 
+
   return fetcher(url, {
     method: 'POST',
     payload: data,
@@ -26,6 +26,6 @@ export const createDonationCampaign = async (data: CampaignPayload) => {
 // 2. Tüm Kampanyaları Çekme Fonksiyonu (GET)
 export const fetchAllDonationCampaigns = async () => {
   const url = API_ENDPOINTS.donations.getAllCampaigns;
-  
+
   return fetcher(url, { method: 'GET' });
 };

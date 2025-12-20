@@ -66,6 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [admin, setAdmin] = useState<Admin | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     members: true, // Default olarak üye yönetimi açık
@@ -75,12 +76,16 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
   // Load admin from localStorage
   useEffect(() => {
     const storedAdmin = localStorage.getItem("admin");
+    const storedIsDemo = localStorage.getItem("isDemo");
     if (storedAdmin) {
       try {
         setAdmin(JSON.parse(storedAdmin));
       } catch (e) {
         console.error("Failed to parse admin:", e);
       }
+    }
+    if (storedIsDemo === "true") {
+      setIsDemo(true);
     }
   }, []);
 
@@ -309,6 +314,18 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
             </h1>
           </div>
         </div>
+        {/* Demo Mode Badge */}
+        {isDemo && (
+          <div className="pb-3 pt-1">
+            <div className="flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 rounded-lg">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              <span className="text-xs font-semibold text-amber-300">Demo Modu</span>
+            </div>
+          </div>
+        )}
       </div>
 
 
