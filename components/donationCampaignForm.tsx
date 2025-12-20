@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { Info, Calendar, Banknote, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
-// Oluşturduğunuz servis dosyasını import ediyoruz
-import { createDonationCampaign } from "@/lib/api/donationService"; 
+// Hook ile kampanya oluşturma
+import useCreateCampaign from "@/hooks/useCreateCampaign";
 
 export default function DonationCampaignForm() {
   const router = useRouter();
 
-  // Yükleme durumu (API isteği sırasında butonu devre dışı bırakmak için)
-  const [loading, setLoading] = useState(false);
+  // Hook kullanımı
+  const { createCampaign, isLoading: loading, error: apiError } = useCreateCampaign();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -77,7 +77,7 @@ export default function DonationCampaignForm() {
     if (!formData.endDate) {
       newErrors.endDate = "Bitiş tarihi zorunludur";
     } else if (new Date(formData.endDate) <= new Date(formData.startDate)) {
-       newErrors.endDate = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır";
+      newErrors.endDate = "Bitiş tarihi başlangıç tarihinden sonra olmalıdır";
     }
 
     if (!formData.iban) {
@@ -87,53 +87,45 @@ export default function DonationCampaignForm() {
     }
 
     if (formData.targetAmount && parseFloat(formData.targetAmount) <= 0) {
-        newErrors.targetAmount = "Hedef miktar 0'dan büyük olmalıdır";
+      newErrors.targetAmount = "Hedef miktar 0'dan büyük olmalıdır";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Form gönderimi (API Entegrasyonu)
+  // Form gönderimi (Hook ile API Entegrasyonu)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // 1. Validasyon kontrolü
     if (!validateForm()) {
-      return; 
+      return;
     }
-    
-    // 2. Yükleme durumunu başlat
-    setLoading(true); 
 
-    try {
-        // 3. Backend'in beklediği formata dönüştürme
-        const payload = {
-            name: formData.name,
-            type: formData.type,
-            // String gelen tutarı sayıya çevir
-            targetAmount: formData.targetAmount ? parseFloat(formData.targetAmount) : 0, 
-            description: formData.description,
-            // Backend modelindeki 'duration' alanı için tarihleri birleştiriyoruz
-            duration: `${formData.startDate} - ${formData.endDate}`, 
-            iban: formData.iban,
-        };
-        
-        // 4. Servis üzerinden API çağrısı yap
-        await createDonationCampaign(payload);
+    // 2. Backend'in beklediği formata dönüştürme
+    const payload = {
+      name: formData.name,
+      type: formData.type,
+      // String gelen tutarı sayıya çevir
+      targetAmount: formData.targetAmount ? parseFloat(formData.targetAmount) : 0,
+      description: formData.description,
+      // Backend modelindeki 'duration' alanı için tarihleri birleştiriyoruz
+      duration: `${formData.startDate} - ${formData.endDate}`,
+      iban: formData.iban,
+    };
 
-        // 5. Başarılı işlem sonrası
-        alert("Kampanya başarıyla oluşturuldu!");
-        router.push("/donations/list"); // Listeleme sayfasına yönlendir (URL'nizi kontrol edin)
-        router.refresh(); // Listeyi güncellemek için sayfayı yenilemeyi tetikle
-        
-    } catch (error) {
-        // 6. Hata yakalama
-        console.error("Kampanya oluşturma hatası:", error);
-        alert(`Kampanya oluşturulamadı: ${(error as Error).message || "Sunucu hatası oluştu."}`);
-    } finally {
-        // 7. İşlem bitince yükleme durumunu kapat
-        setLoading(false); 
+    // 3. Hook üzerinden API çağrısı yap
+    const success = await createCampaign(payload);
+
+    if (success) {
+      // 4. Başarılı işlem sonrası
+      alert("Kampanya başarıyla oluşturuldu!");
+      router.push("/donations/list");
+      router.refresh();
+    } else {
+      // 5. Hata durumu
+      alert(`Kampanya oluşturulamadı: ${apiError || "Sunucu hatası oluştu."}`);
     }
   };
 
@@ -158,9 +150,8 @@ export default function DonationCampaignForm() {
               value={formData.name}
               onChange={handleChange}
               disabled={loading}
-              className={`w-full px-4 py-2 border rounded-lg ${
-                errors.name ? "border-red-500" : "border-gray-300"
-              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed`}
+              className={`w-full px-4 py-2 border rounded-lg ${errors.name ? "border-red-500" : "border-gray-300"
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed`}
               placeholder="Örn: Eğitim Destek Kampanyası"
             />
             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -176,9 +167,8 @@ export default function DonationCampaignForm() {
               value={formData.type}
               onChange={handleChange}
               disabled={loading}
-              className={`w-full px-4 py-2 border rounded-lg ${
-                errors.type ? "border-red-500" : "border-gray-300"
-              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
+              className={`w-full px-4 py-2 border rounded-lg ${errors.type ? "border-red-500" : "border-gray-300"
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
             >
               <option value="">Kampanya Türü Seçin</option>
               {campaignTypes.map(type => (
@@ -203,12 +193,11 @@ export default function DonationCampaignForm() {
               disabled={loading}
               min="0"
               step="0.01"
-              className={`w-full px-4 py-2 border rounded-lg ${
-                errors.targetAmount ? "border-red-500" : "border-gray-300"
-              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
+              className={`w-full px-4 py-2 border rounded-lg ${errors.targetAmount ? "border-red-500" : "border-gray-300"
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
               placeholder="0.00"
             />
-             {errors.targetAmount && <p className="text-red-500 text-sm mt-1">{errors.targetAmount}</p>}
+            {errors.targetAmount && <p className="text-red-500 text-sm mt-1">{errors.targetAmount}</p>}
           </div>
         </div>
       </div>
@@ -247,9 +236,8 @@ export default function DonationCampaignForm() {
               onChange={handleChange}
               disabled={loading}
               min={formData.startDate}
-              className={`w-full px-4 py-2 border rounded-lg ${
-                errors.endDate ? "border-red-500" : "border-gray-300"
-              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
+              className={`w-full px-4 py-2 border rounded-lg ${errors.endDate ? "border-red-500" : "border-gray-300"
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
             />
             {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
           </div>
@@ -273,9 +261,8 @@ export default function DonationCampaignForm() {
             value={formData.iban}
             onChange={handleChange}
             disabled={loading}
-            className={`w-full px-4 py-2 border rounded-lg ${
-              errors.iban ? "border-red-500" : "border-gray-300"
-            } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
+            className={`w-full px-4 py-2 border rounded-lg ${errors.iban ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
             placeholder="TR00 0000 0000 0000 0000 0000 00"
             maxLength={32}
           />
@@ -306,20 +293,20 @@ export default function DonationCampaignForm() {
           disabled={loading}
           className={`
             bg-gradient-to-r text-white px-12 py-4 rounded-lg font-semibold text-lg shadow-lg flex items-center space-x-2 transition-all duration-200
-            ${loading 
-                ? 'from-gray-400 to-gray-500 cursor-not-allowed transform-none' 
-                : 'from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 hover:scale-105'
+            ${loading
+              ? 'from-gray-400 to-gray-500 cursor-not-allowed transform-none'
+              : 'from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 hover:scale-105'
             }
           `}
         >
           {loading ? (
             // Basit bir loading spinner simülasyonu veya metni
             <span className="flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Oluşturuluyor...
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Oluşturuluyor...
             </span>
           ) : (
             <>

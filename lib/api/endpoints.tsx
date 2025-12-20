@@ -64,16 +64,25 @@ export const API_ENDPOINTS = {
     deleteMember: (id: string) => `${API_BASE_URL}/members/${id}`,
   },
 
-  // 🚀 SENİN EKLEDİĞİN DONATIONS KISMI
-  donations: {
-    // CREATE - Yeni kampanya oluştur (POST /donations)
-    createCampaign: `${API_BASE_URL}/donations`,
+  // 🚀 KAMPANYA YÖNETİMİ (Campaigns)
+  campaigns: {
+    // CREATE - Yeni kampanya oluştur (POST /campaigns)
+    createCampaign: `${API_BASE_URL}/campaigns`,
 
-    // READ - Tüm kampanyaları getir (GET /donations)
-    getAllCampaigns: `${API_BASE_URL}/donations`,
+    // READ - Tüm kampanyaları getir (GET /campaigns)
+    getAllCampaigns: `${API_BASE_URL}/campaigns`,
 
-    // READ - ID'ye göre kampanya getir (GET /donations/:id)
-    getCampaignById: (id: string) => `${API_BASE_URL}/donations/${id}`,
+    // READ - ID'ye göre kampanya getir (GET /campaigns/:id)
+    getCampaignById: (id: number) => `${API_BASE_URL}/campaigns/${id}`,
+
+    // UPDATE - Kampanya güncelle (PUT /campaigns/:id)
+    updateCampaign: (id: number) => `${API_BASE_URL}/campaigns/${id}`,
+
+    // DELETE - Kampanya sil (DELETE /campaigns/:id)
+    deleteCampaign: (id: number) => `${API_BASE_URL}/campaigns/${id}`,
+
+    // READ - Kampanyaya ait bağışları getir (GET /campaigns/:id/donations)
+    getCampaignDonations: (id: number) => `${API_BASE_URL}/campaigns/${id}/donations`,
   },
 
   // 📅 ETKİNLİK YÖNETİMİ
