@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Shield,
   Lock,
@@ -18,6 +18,7 @@ import {
   FileText,
   Building2,
   Briefcase,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
@@ -116,6 +117,7 @@ interface FormErrors {
 }
 
 export default function CreateManagerPage() {
+  const [isDemo, setIsDemo] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -132,6 +134,14 @@ export default function CreateManagerPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Check demo mode on mount
+  useEffect(() => {
+    const storedIsDemo = localStorage.getItem("isDemo");
+    if (storedIsDemo === "true") {
+      setIsDemo(true);
+    }
+  }, []);
 
   // Form değişiklik yönetimi
   const handleInputChange = (
@@ -327,6 +337,23 @@ export default function CreateManagerPage() {
           Sistem yöneticisi oluşturun ve modül yetkilerini belirleyin
         </p>
       </div>
+
+      {/* Demo Mode Warning */}
+      {isDemo && (
+        <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-xl shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-6 w-6 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-amber-800">Demo Modundasınız</h3>
+              <p className="text-sm text-amber-700 mt-1">
+                Yönetici ekleyebilmek için Derp geliştiricileri ile iletişime geçin.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">

@@ -1,17 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Save, Calendar, Clock, MapPin, Globe, Info } from "lucide-react";
+import { ArrowLeft, Save, Calendar, Clock, MapPin, Globe, Info, Loader2, AlertCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createEvent, CreateEventPayload } from "../lib/api/eventService";
+import { toast } from "sonner";
 
 export default function YeniEtkinlik() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     isim: "",
     tarih: "",
     saat: "",
-    tur: "Offline",
+    tur: "Fiziksel" as "Fiziksel" | "Çevrimiçi",
     yer: "",
     platform: "",
     link: "",
@@ -20,6 +23,7 @@ export default function YeniEtkinlik() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -39,12 +43,12 @@ export default function YeniEtkinlik() {
     if (!formData.isim.trim()) newErrors.isim = "Etkinlik ismi gereklidir";
     if (!formData.tarih) newErrors.tarih = "Tarih gereklidir";
     if (!formData.saat) newErrors.saat = "Saat gereklidir";
-    
-    if (formData.tur === "Offline" && !formData.yer.trim()) {
-      newErrors.yer = "Offline etkinlikler için yer bilgisi gereklidir";
+
+    if (formData.tur === "Fiziksel" && !formData.yer.trim()) {
+      newErrors.yer = "Fiziksel etkinlikler için yer bilgisi gereklidir";
     }
-    
-    if (formData.tur === "Online") {
+
+    if (formData.tur === "Çevrimiçi") {
       if (!formData.platform) newErrors.platform = "Platform seçimi gereklidir";
       if (!formData.link.trim()) newErrors.link = "Link gereklidir";
     }
@@ -55,26 +59,70 @@ export default function YeniEtkinlik() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (validateForm()) {
-      // API çağrısı yapılacak
-      console.log("Form Data:", formData);
-      
+    setApiError(null);
+
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Form verilerini API formatına dönüştür
+      const payload: CreateEventPayload = {
+        eventName: formData.isim,
+        date: formData.tarih,
+        time: formData.saat,
+        eventType: formData.tur,
+        description: formData.aciklama,
+        quota: formData.kontenjan ? parseInt(formData.kontenjan) : undefined,
+      };
+
+      // Tür'e göre konum bilgilerini ekle
+      if (formData.tur === "Fiziksel") {
+        payload.location = formData.yer;
+      } else {
+        payload.platform = formData.platform;
+        payload.eventLink = formData.link;
+      }
+
+      await createEvent(payload);
+
       // Başarılı mesajı göster ve listeye yönlendir
-      alert("Etkinlik başarıyla oluşturuldu!");
-      router.push("/events");
+      toast.success("Etkinlik başarıyla oluşturuldu!");
+      router.push("/events/list");
+    } catch (error: any) {
+      console.error("Etkinlik oluşturulurken hata:", error);
+      // Backend'den gelen hata mesajını toast ile göster
+      toast.error(error.message || "Etkinlik oluşturulurken bir hata oluştu.");
+      setApiError(error.message || "Etkinlik oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* Başlık */}
-      
-
       {/* Form */}
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
+        {/* API Error Alert */}
+        {apiError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <h4 className="text-red-800 font-medium">Hata</h4>
+              <p className="text-red-600 text-sm mt-1">{apiError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setApiError(null)}
+              className="text-red-400 hover:text-red-600 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
+
         {/* Temel Bilgiler */}
         <div className="border-b pb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -93,9 +141,9 @@ export default function YeniEtkinlik() {
                 name="isim"
                 value={formData.isim}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.isim ? "border-red-500" : "border-gray-300"
-                }`}
+                disabled={isSubmitting}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.isim ? "border-red-500" : "border-gray-300"
+                  } ${isSubmitting ? "bg-gray-100" : ""}`}
                 placeholder="Örn: Yazılım Geliştirme Semineri"
               />
               {errors.isim && <p className="text-red-500 text-sm mt-1">{errors.isim}</p>}
@@ -113,9 +161,9 @@ export default function YeniEtkinlik() {
                   name="tarih"
                   value={formData.tarih}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.tarih ? "border-red-500" : "border-gray-300"
-                  }`}
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.tarih ? "border-red-500" : "border-gray-300"
+                    } ${isSubmitting ? "bg-gray-100" : ""}`}
                 />
                 {errors.tarih && <p className="text-red-500 text-sm mt-1">{errors.tarih}</p>}
               </div>
@@ -130,9 +178,9 @@ export default function YeniEtkinlik() {
                   name="saat"
                   value={formData.saat}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.saat ? "border-red-500" : "border-gray-300"
-                  }`}
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.saat ? "border-red-500" : "border-gray-300"
+                    } ${isSubmitting ? "bg-gray-100" : ""}`}
                 />
                 {errors.saat && <p className="text-red-500 text-sm mt-1">{errors.saat}</p>}
               </div>
@@ -148,7 +196,8 @@ export default function YeniEtkinlik() {
                 name="kontenjan"
                 value={formData.kontenjan}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={isSubmitting}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isSubmitting ? "bg-gray-100" : ""}`}
                 placeholder="Maksimum katılımcı sayısı"
                 min="1"
               />
@@ -174,29 +223,31 @@ export default function YeniEtkinlik() {
                   <input
                     type="radio"
                     name="tur"
-                    value="Offline"
-                    checked={formData.tur === "Offline"}
+                    value="Fiziksel"
+                    checked={formData.tur === "Fiziksel"}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                     className="w-4 h-4 text-blue-600"
                   />
-                  <span className="text-gray-700">Offline (Fiziksel Mekan)</span>
+                  <span className="text-gray-700">Fiziksel (Offline)</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="tur"
-                    value="Online"
-                    checked={formData.tur === "Online"}
+                    value="Çevrimiçi"
+                    checked={formData.tur === "Çevrimiçi"}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                     className="w-4 h-4 text-blue-600"
                   />
-                  <span className="text-gray-700">Online (Dijital Platform)</span>
+                  <span className="text-gray-700">Çevrimiçi (Online)</span>
                 </label>
               </div>
             </div>
 
-            {/* Offline - Yer Bilgisi */}
-            {formData.tur === "Offline" && (
+            {/* Fiziksel - Yer Bilgisi */}
+            {formData.tur === "Fiziksel" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Etkinlik Yeri <span className="text-red-500">*</span>
@@ -206,9 +257,9 @@ export default function YeniEtkinlik() {
                   name="yer"
                   value={formData.yer}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    errors.yer ? "border-red-500" : "border-gray-300"
-                  }`}
+                  disabled={isSubmitting}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.yer ? "border-red-500" : "border-gray-300"
+                    } ${isSubmitting ? "bg-gray-100" : ""}`}
                   placeholder="Örn: Merkez Ofis, İstanbul"
                 />
                 {errors.yer && <p className="text-red-500 text-sm mt-1">{errors.yer}</p>}
@@ -216,7 +267,7 @@ export default function YeniEtkinlik() {
             )}
 
             {/* Online - Platform ve Link */}
-            {formData.tur === "Online" && (
+            {formData.tur === "Çevrimiçi" && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -227,9 +278,9 @@ export default function YeniEtkinlik() {
                     name="platform"
                     value={formData.platform}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.platform ? "border-red-500" : "border-gray-300"
-                    }`}
+                    disabled={isSubmitting}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.platform ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "bg-gray-100" : ""}`}
                   >
                     <option value="">Platform Seçiniz</option>
                     <option value="Google Meet">Google Meet</option>
@@ -251,9 +302,9 @@ export default function YeniEtkinlik() {
                     name="link"
                     value={formData.link}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      errors.link ? "border-red-500" : "border-gray-300"
-                    }`}
+                    disabled={isSubmitting}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.link ? "border-red-500" : "border-gray-300"
+                      } ${isSubmitting ? "bg-gray-100" : ""}`}
                     placeholder="https://meet.google.com/xxx-xxxx-xxx"
                   />
                   {errors.link && <p className="text-red-500 text-sm mt-1">{errors.link}</p>}
@@ -272,27 +323,37 @@ export default function YeniEtkinlik() {
             name="aciklama"
             value={formData.aciklama}
             onChange={handleChange}
+            disabled={isSubmitting}
             rows={4}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.aciklama ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.aciklama ? "border-red-500" : "border-gray-300"
+              } ${isSubmitting ? "bg-gray-100" : ""}`}
             placeholder="Etkinlik hakkında detaylı bilgi verin..."
           />
           {errors.aciklama && <p className="text-red-500 text-sm mt-1">{errors.aciklama}</p>}
         </div>
 
         {/* Butonlar */}
-        <div className="flex justify-center pt-8">
+        <div className="flex justify-center gap-4 pt-8">
           <button
             type="submit"
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save size={20} />
-            Etkinliği Kaydet
+            {isSubmitting ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Kaydediliyor...
+              </>
+            ) : (
+              <>
+                <Save size={20} />
+                Etkinliği Kaydet
+              </>
+            )}
           </button>
           <Link
-            href="/events"
-            className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg transition-colors"
+            href="/events/list"
+            className={`flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg transition-colors ${isSubmitting ? "pointer-events-none opacity-50" : ""}`}
           >
             İptal
           </Link>

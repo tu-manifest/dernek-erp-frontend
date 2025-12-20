@@ -1,33 +1,30 @@
 // lib/api/endpoints.tsx
 
 //Genel API için
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api"; 
-
-//Auth işlemleri farklı bir portta çalıştırmak için sanırsam
-const AUTH_API_BASE_URL = "http://localhost:8000/api"; 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
 
 export const API_ENDPOINTS = {
   auth: {
     // POST - Login
-    login: `${AUTH_API_BASE_URL}/auth/login`,
+    login: `${API_BASE_URL}/auth/login`,
 
     // GET - Get current admin (requires Bearer token)
-    me: `${AUTH_API_BASE_URL}/auth/me`,
+    me: `${API_BASE_URL}/auth/me`,
 
     // POST - Register new admin
-    register: `${AUTH_API_BASE_URL}/auth/register`,
+    register: `${API_BASE_URL}/auth/register`,
 
     // GET - Get all admins (protected)
-    getAllAdmins: `${AUTH_API_BASE_URL}/auth/admins`,
+    getAllAdmins: `${API_BASE_URL}/auth/admins`,
 
     // GET - Get admin by ID (protected)
-    getAdmin: (id: number) => `${AUTH_API_BASE_URL}/auth/admins/${id}`,
+    getAdmin: (id: number) => `${API_BASE_URL}/auth/admins/${id}`,
 
     // PUT - Update admin (protected)
-    updateAdmin: (id: number) => `${AUTH_API_BASE_URL}/auth/admins/${id}`,
+    updateAdmin: (id: number) => `${API_BASE_URL}/auth/admins/${id}`,
 
     // DELETE - Delete admin (protected)
-    deleteAdmin: (id: number) => `${AUTH_API_BASE_URL}/auth/admins/${id}`,
+    deleteAdmin: (id: number) => `${API_BASE_URL}/auth/admins/${id}`,
   },
 
   groups: {
@@ -77,5 +74,29 @@ export const API_ENDPOINTS = {
 
     // READ - ID'ye göre kampanya getir (GET /donations/:id)
     getCampaignById: (id: string) => `${API_BASE_URL}/donations/${id}`,
+  },
+
+  // 📅 ETKİNLİK YÖNETİMİ
+  events: {
+    // CREATE - Yeni etkinlik oluştur (POST /events)
+    createEvent: `${API_BASE_URL}/events`,
+
+    // READ - Tüm etkinlikleri getir (GET /events)
+    getAllEvents: `${API_BASE_URL}/events`,
+
+    // READ - Filtreli liste (GET /events?status=Planlandı)
+    getEventsByStatus: (status: string) => `${API_BASE_URL}/events?status=${status}`,
+
+    // READ - ID'ye göre etkinlik getir (GET /events/:id)
+    getEventById: (id: number) => `${API_BASE_URL}/events/${id}`,
+
+    // UPDATE - Etkinlik güncelle (PUT /events/:id)
+    updateEvent: (id: number) => `${API_BASE_URL}/events/${id}`,
+
+    // DELETE - Etkinlik sil (DELETE /events/:id)
+    deleteEvent: (id: number) => `${API_BASE_URL}/events/${id}`,
+
+    // PATCH - Durum güncelle (PATCH /events/:id/status)
+    updateEventStatus: (id: number) => `${API_BASE_URL}/events/${id}/status`,
   },
 };

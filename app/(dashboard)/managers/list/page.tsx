@@ -16,6 +16,7 @@ import {
   X as XIcon,
   Trash2,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
@@ -43,6 +44,7 @@ const SYSTEM_MODULES = [
 export default function ManagerListPage() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editedData, setEditedData] = useState<Admin | null>(null);
@@ -51,8 +53,12 @@ export default function ManagerListPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch all admins on mount
+  // Check demo mode and fetch admins on mount
   useEffect(() => {
+    const storedIsDemo = localStorage.getItem("isDemo");
+    if (storedIsDemo === "true") {
+      setIsDemo(true);
+    }
     fetchAdmins();
   }, []);
 
@@ -240,6 +246,23 @@ export default function ManagerListPage() {
           Sistemdeki tüm yöneticileri görüntüleyin ve detaylarına erişin
         </p>
       </div>
+
+      {/* Demo Mode Warning */}
+      {isDemo && (
+        <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-xl shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="h-6 w-6 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-amber-800">Demo Modundasınız</h3>
+              <p className="text-sm text-amber-700 mt-1">
+                Yönetici ekleyebilmek için Derp geliştiricileri ile iletişime geçin.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">

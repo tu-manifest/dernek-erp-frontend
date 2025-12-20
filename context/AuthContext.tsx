@@ -131,8 +131,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check auth with /me endpoint
     const checkAuth = useCallback(async (): Promise<boolean> => {
         const storedToken = localStorage.getItem("authToken");
+        const storedIsDemo = localStorage.getItem("isDemo");
 
         if (!storedToken) {
+            setIsLoading(false);
+            return false;
+        }
+
+        // Skip API check for demo mode - just validate from localStorage
+        if (storedIsDemo === "true") {
+            const storedAdmin = localStorage.getItem("admin");
+            if (storedAdmin) {
+                try {
+                    setToken(storedToken);
+                    setAdmin(JSON.parse(storedAdmin));
+                    setIsDemo(true);
+                    setIsLoading(false);
+                    return true;
+                } catch (e) {
+                    console.error("Failed to parse demo admin:", e);
+                }
+            }
             setIsLoading(false);
             return false;
         }

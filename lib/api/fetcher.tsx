@@ -10,7 +10,7 @@ const fetcher = async (
   options: FetcherOptions = {}
 ): Promise<any> => {
   const { method = "GET", payload, headers = {} } = options;
- console.log("💥 Gelen URL:", url);
+  console.log("💥 Gelen URL:", url);
   console.log("💥 typeof URL:", typeof url);
   let fullUrl = url;
   let fetchOptions: RequestInit = {
@@ -31,7 +31,7 @@ const fetcher = async (
   } else if (payload) {
     fetchOptions.body = JSON.stringify(payload);
   }
-console.log("Fetch options:", fetchOptions);
+  console.log("Fetch options:", fetchOptions);
   console.log(`[${method}] Fetching:`, fullUrl);
   console.log("Request payload:", payload);
 
@@ -43,18 +43,29 @@ console.log("Fetch options:", fetchOptions);
     console.log("Response headers:", Object.fromEntries(res.headers.entries()));
 
     if (!res.ok) {
-      let errorText;
+      let errorMessage = `HTTP ${res.status} - ${res.statusText}`;
       try {
-        errorText = await res.text();
+        const errorData = await res.json();
+        // Backend'den gelen message alanını al
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
       } catch (e) {
-        errorText = `HTTP ${res.status} - ${res.statusText}`;
+        // JSON parse edilemezse text olarak dene
+        try {
+          errorMessage = await res.text();
+        } catch { }
       }
-      console.error("Hata Durumu:", res.status, errorText);
-      throw new Error(`API isteği başarısız oldu: ${errorText}`);
+      console.error("Hata Durumu:", res.status, errorMessage);
+      const error = new Error(errorMessage);
+      (error as any).statusCode = res.status;
+      throw error;
     }
 
     const contentType = res.headers.get("Content-Type");
-    
+
     if (contentType?.includes("application/json")) {
       const jsonResponse = await res.json();
       console.log("JSON Response:", jsonResponse);
@@ -67,15 +78,15 @@ console.log("Fetch options:", fetchOptions);
   } catch (error: any) {
     clearTimeout(timeoutId); // Hata durumunda da timeout'u temizle
     console.error("Fetch error:", error);
-    
+
     if (error.name === 'AbortError') {
       throw new Error("İstek zaman aşımına uğradı. Lütfen tekrar deneyin.");
     }
-    
+
     if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
       throw new Error("Ağ hatası: Sunucuya ulaşılamıyor. Lütfen bağlantınızı kontrol edin.");
     }
-    
+
     throw error;
   }
 };

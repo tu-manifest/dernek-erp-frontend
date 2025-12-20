@@ -19,9 +19,16 @@ export default function DashboardLayout({
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem("authToken");
+      const isDemo = localStorage.getItem("isDemo");
 
       if (!token) {
         router.push("/login");
+        return;
+      }
+
+      // Skip API check for demo mode
+      if (isDemo === "true") {
+        setIsChecking(false);
         return;
       }
 
@@ -40,6 +47,7 @@ export default function DashboardLayout({
           localStorage.removeItem("authToken");
           localStorage.removeItem("admin");
           localStorage.removeItem("userEmail");
+          localStorage.removeItem("isDemo");
           router.push("/login");
           return;
         }
