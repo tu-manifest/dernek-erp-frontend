@@ -8,25 +8,6 @@ export default function CampaignListPage() {
   // Hook'u kullanarak kampanyaları çek
   const { campaigns, isLoading, isError } = useGetAllCampaigns();
 
-  const handleEdit = (campaign: any) => {
-    console.log("Düzenle:", campaign);
-    // Düzenleme modalı veya sayfasına yönlendirme
-  };
-
-  const handleDelete = (campaignId: string) => {
-    console.log("Sil:", campaignId);
-    // Silme onayı ve işlemi
-    if (confirm("Bu kampanyayı silmek istediğinizden emin misiniz?")) {
-      // Silme işlemi burada yapılacak
-      console.log("Kampanya silindi:", campaignId);
-    }
-  };
-
-  const handleView = (campaign: any) => {
-    console.log("Görüntüle:", campaign);
-    // Detay modalı veya sayfasına yönlendirme
-  };
-
   // Loading durumu
   if (isLoading) {
     return (
@@ -73,10 +54,6 @@ export default function CampaignListPage() {
   return (
     <div className="p-6">
       <CampaignTable
-        campaigns={campaigns}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onView={handleView}
       />
     </div>
   );

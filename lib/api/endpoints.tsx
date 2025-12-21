@@ -108,4 +108,25 @@ export const API_ENDPOINTS = {
     // PATCH - Durum güncelle (PATCH /events/:id/status)
     updateEventStatus: (id: number) => `${API_BASE_URL}/events/${id}/status`,
   },
+
+  // 💰 DIŞ BAĞIŞÇI YÖNETİMİ (Donors)
+  donors: {
+    // CREATE - Yeni bağışçı oluştur (POST /donors)
+    createDonor: `${API_BASE_URL}/donors`,
+
+    // READ - Tüm bağışçıları getir (GET /donors)
+    getAllDonors: `${API_BASE_URL}/donors`,
+
+    // READ - ID'ye göre bağışçı getir (GET /donors/:id)
+    getDonorById: (id: number) => `${API_BASE_URL}/donors/${id}`,
+
+    // UPDATE - Bağışçı güncelle (PUT /donors/:id)
+    updateDonor: (id: number) => `${API_BASE_URL}/donors/${id}`,
+
+    // DELETE - Bağışçı sil (DELETE /donors/:id)
+    deleteDonor: (id: number) => `${API_BASE_URL}/donors/${id}`,
+
+    // READ - Bağışçının bağışlarını getir (GET /donors/:id/donations)
+    getDonorDonations: (id: number) => `${API_BASE_URL}/donors/${id}/donations`,
+  },
 };

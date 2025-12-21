@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import useSWR from 'swr';
 import fetcher from "../lib/api/fetcher";
 import { API_ENDPOINTS } from "../lib/api/endpoints";
 
@@ -35,60 +35,38 @@ export interface CampaignStats {
 }
 
 export default function useGetAllCampaigns() {
-    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-    const [stats, setStats] = useState<CampaignStats>({
-        totalCampaigns: 0,
-        activeCampaigns: 0,
-        completedCampaigns: 0,
-        totalTarget: 0,
-        totalCollected: 0,
-    });
-    const [isLoading, setIsLoading] = useState(true);
-    const [isError, setIsError] = useState(false);
-
-    const fetchCampaigns = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            setIsError(false);
-
-            const url = API_ENDPOINTS.campaigns.getAllCampaigns;
-            const response: CampaignsResponse = await fetcher(url, { method: 'GET' });
-
-            if (response.success && Array.isArray(response.data)) {
-                setCampaigns(response.data);
-
-                // İstatistikleri hesapla
-                const calculatedStats: CampaignStats = {
-                    totalCampaigns: response.data.length,
-                    activeCampaigns: response.data.filter(c => c.status === 'active').length,
-                    completedCampaigns: response.data.filter(c => c.status === 'completed').length,
-                    totalTarget: response.data.reduce((sum, c) => sum + (c.targetAmount || 0), 0),
-                    totalCollected: response.data.reduce((sum, c) => sum + (c.collectedAmount || 0), 0),
-                };
-                setStats(calculatedStats);
-            } else if (Array.isArray(response)) {
-                // Eğer response direkt array olarak gelirse
-                setCampaigns(response);
-            } else {
-                setCampaigns([]);
-            }
-        } catch (error) {
-            console.error("Kampanyalar yüklenirken hata oluştu:", error);
-            setIsError(true);
-            setCampaigns([]);
-        } finally {
-            setIsLoading(false);
+    const { data, error, isLoading, mutate } = useSWR<CampaignsResponse>(
+        API_ENDPOINTS.campaigns.getAllCampaigns,
+        fetcher,
+        {
+            revalidateOnFocus: false, // Tarayıcı odaklandığında tekrar istek atma
+            refreshInterval: 30000, // 30 saniye aralıklarla canlı veri akışı
+            dedupingInterval: 2000, // 2 saniye içinde tekrarlanan istekleri engelle
         }
-    }, []);
+    );
 
-    useEffect(() => {
-        fetchCampaigns();
-    }, [fetchCampaigns]);
+    // Kampanyaları güvenli şekilde çıkar
+    let campaigns: Campaign[] = [];
+    if (data?.success && Array.isArray(data.data)) {
+        campaigns = data.data;
+    } else if (Array.isArray(data)) {
+        campaigns = data;
+    }
 
-    // Refetch function for refreshing data after mutations
-    const refetch = useCallback(() => {
-        fetchCampaigns();
-    }, [fetchCampaigns]);
+    // İstatistikleri hesapla
+    const stats: CampaignStats = {
+        totalCampaigns: campaigns.length,
+        activeCampaigns: campaigns.filter(c => c.status === 'active').length,
+        completedCampaigns: campaigns.filter(c => c.status === 'completed').length,
+        totalTarget: campaigns.reduce((sum, c) => sum + (c.targetAmount || 0), 0),
+        totalCollected: campaigns.reduce((sum, c) => sum + (c.collectedAmount || 0), 0),
+    };
 
-    return { campaigns, stats, isLoading, isError, refetch };
+    return {
+        campaigns,
+        stats,
+        isLoading,
+        isError: !!error,
+        refetch: mutate, // Manuel yenileme için
+    };
 }

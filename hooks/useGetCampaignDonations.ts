@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import useSWR from 'swr';
 import fetcher from "../lib/api/fetcher";
 import { API_ENDPOINTS } from "../lib/api/endpoints";
 
@@ -22,42 +22,32 @@ export interface CampaignDonationsResponse {
     data: CampaignDonation[];
 }
 
-export default function useGetCampaignDonations() {
-    const [donations, setDonations] = useState<CampaignDonation[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isError, setIsError] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+export default function useGetCampaignDonations(campaignId: number | null) {
+    // campaignId null ise istek yapma
+    const url = campaignId ? API_ENDPOINTS.campaigns.getCampaignDonations(campaignId) : null;
 
-    const fetchDonations = useCallback(async (campaignId: number) => {
-        try {
-            setIsLoading(true);
-            setIsError(false);
-            setError(null);
-
-            const url = API_ENDPOINTS.campaigns.getCampaignDonations(campaignId);
-            const response: CampaignDonationsResponse = await fetcher(url, { method: 'GET' });
-
-            if (response.success && Array.isArray(response.data)) {
-                setDonations(response.data);
-            } else {
-                setDonations([]);
-            }
-        } catch (err: any) {
-            console.error("Bağışlar yüklenirken hata:", err);
-            setIsError(true);
-            setError(err.message || "Bağışlar yüklenirken bir hata oluştu");
-            setDonations([]);
-        } finally {
-            setIsLoading(false);
+    const { data, error, isLoading, mutate } = useSWR<CampaignDonationsResponse>(
+        url,
+        fetcher,
+        {
+            revalidateOnFocus: false, // Tarayıcı odaklandığında tekrar istek atma
+            refreshInterval: 10000, // 10 saniye aralıklarla veriyi yenile
+            dedupingInterval: 2000, // 2 saniye içinde tekrarlanan istekleri engelle
         }
-    }, []);
+    );
 
-    const reset = useCallback(() => {
-        setDonations([]);
-        setIsLoading(false);
-        setIsError(false);
-        setError(null);
-    }, []);
+    // Donations array'ini güvenli şekilde çıkar
+    let donations: CampaignDonation[] = [];
+    if (data?.success && Array.isArray(data.data)) {
+        donations = data.data;
+    }
 
-    return { donations, isLoading, isError, error, fetchDonations, reset };
+    return {
+        donations,
+        count: data?.count || 0,
+        isLoading,
+        isError: !!error,
+        error: error?.message || null,
+        refetch: mutate, // Manuel yenileme için
+    };
 }

@@ -36,21 +36,25 @@ interface CampaignTableProps {
 
 const CampaignTable: React.FC<CampaignTableProps> = ({ onRefresh }) => {
     const { campaigns, isLoading: isCampaignsLoading, isError: isCampaignsError, refetch } = useGetAllCampaigns();
-    const { donations, isLoading: isDonationsLoading, isError: isDonationsError, error: donationsError, fetchDonations, reset: resetDonations } = useGetCampaignDonations();
     const { updateCampaign, isLoading: isUpdating, error: updateError, reset: resetUpdate } = useUpdateCampaign();
     const { deleteCampaign, isLoading: isDeleting, error: deleteError, reset: resetDelete } = useDeleteCampaign();
-
-    const [searchTerm, setSearchTerm] = useState("");
-    const [filterType, setFilterType] = useState("all");
-    const [sortField, setSortField] = useState<keyof Campaign>("name");
-    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-    const [selectedCampaigns, setSelectedCampaigns] = useState<number[]>([]);
 
     // Modal states
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+
+    // SWR ile bağışları çek - modal açıkken selectedCampaign.id gönder
+    const { donations, isLoading: isDonationsLoading, isError: isDonationsError, error: donationsError } = useGetCampaignDonations(
+        isViewModalOpen && selectedCampaign ? selectedCampaign.id : null
+    );
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterType, setFilterType] = useState("all");
+    const [sortField, setSortField] = useState<keyof Campaign>("name");
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+    const [selectedCampaigns, setSelectedCampaigns] = useState<number[]>([]);
 
     // Edit form state
     const [editFormData, setEditFormData] = useState({
@@ -162,9 +166,8 @@ const CampaignTable: React.FC<CampaignTableProps> = ({ onRefresh }) => {
     // View Donations Modal Handlers
     const handleViewClick = (campaign: Campaign) => {
         setSelectedCampaign(campaign);
-        resetDonations();
-        fetchDonations(campaign.id);
         setIsViewModalOpen(true);
+        // SWR otomatik olarak veriyi çekecek
     };
 
     // Edit Modal Handlers
@@ -307,7 +310,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({ onRefresh }) => {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Bir hata oluştu</h3>
                 <p className="text-gray-500 mb-4">Kampanyalar yüklenirken bir sorun oluştu.</p>
                 <button
-                    onClick={refetch}
+                    onClick={() => refetch()}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     Tekrar Dene
@@ -370,14 +373,7 @@ const CampaignTable: React.FC<CampaignTableProps> = ({ onRefresh }) => {
                                 <span>Dışa Aktar</span>
                             </button>
 
-                            {/* New Campaign Button */}
-                            <Link
-                                href="/donations/create"
-                                className="bg-green-500 text-white px-4 py-2.5 rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-2 font-medium"
-                            >
-                                <Plus size={18} />
-                                <span>Yeni Kampanya</span>
-                            </Link>
+
                         </div>
                     </div>
                 </div>
@@ -646,7 +642,22 @@ const CampaignTable: React.FC<CampaignTableProps> = ({ onRefresh }) => {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between mb-4">
+                            {/* Canlı Veri Göstergesi */}
+                            <div className="flex items-center justify-between mb-4 bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200">
+                                <div className="flex items-center gap-2">
+                                    <span className="relative flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                    </span>
+                                    <span className="text-sm font-medium text-green-700">Canlı Veri Akışı</span>
+                                    <span className="text-xs text-green-600">(10 saniyede bir güncelleniyor)</span>
+                                </div>
+                                <span className="text-sm text-green-600">
+                                    Toplam: <span className="font-bold">{donations.length}</span> bağış
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-600">
                                     Toplam <span className="font-bold text-blue-600">{donations.length}</span> bağış
                                 </span>

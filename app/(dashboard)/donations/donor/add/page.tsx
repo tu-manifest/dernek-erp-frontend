@@ -1,21 +1,25 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Users,
   Building2,
   Mail,
   Phone,
   Check,
-  Info,
   User,
   AlertCircle,
+  Loader2,
+  ArrowLeft,
 } from "lucide-react";
+import Link from "next/link";
+import useCreateDonor from "@/hooks/useCreateDonor";
 
 interface DonorFormData {
-  donorName: string;
-  donorType: "kisi" | "kurum";
+  name: string;
+  type: "Kişi" | "Kurum";
   email: string;
-  phoneNumber: string;
+  phone: string;
 }
 
 interface FormErrors {
@@ -23,14 +27,18 @@ interface FormErrors {
 }
 
 const AddDonorPage: React.FC = () => {
+  const router = useRouter();
+  const { createDonor, isLoading } = useCreateDonor();
+
   const [formData, setFormData] = useState<DonorFormData>({
-    donorName: "",
-    donorType: "kisi",
+    name: "",
+    type: "Kişi",
     email: "",
-    phoneNumber: "",
+    phone: "",
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validateEmail = (email: string): boolean => {
     if (!email) return true;
@@ -40,7 +48,7 @@ const AddDonorPage: React.FC = () => {
 
   const validatePhone = (phone: string): boolean => {
     if (!phone) return true;
-    const phoneRegex = /^(\+90|0)?[0-9]{10}$/;
+    const phoneRegex = /^(\+90|0)?[0-9\s-]{10,15}$/;
     return phoneRegex.test(phone.replace(/\s/g, ""));
   };
 
@@ -49,6 +57,7 @@ const AddDonorPage: React.FC = () => {
     value: string
   ): void => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setSubmitError(null);
 
     if (errors[field]) {
       setErrors((prev) => {
@@ -62,36 +71,42 @@ const AddDonorPage: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.donorName.trim()) {
-      newErrors.donorName = "Bağışçı/Kurum adı gereklidir";
-    } else if (formData.donorName.trim().length < 2) {
-      newErrors.donorName = "Bağışçı/Kurum adı en az 2 karakter olmalıdır";
+    if (!formData.name.trim()) {
+      newErrors.name = "Bağışçı/Kurum adı gereklidir";
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = "Bağışçı/Kurum adı en az 2 karakter olmalıdır";
     }
 
     if (formData.email && !validateEmail(formData.email)) {
       newErrors.email = "Geçerli bir e-posta adresi giriniz";
     }
 
-    if (formData.phoneNumber && !validatePhone(formData.phoneNumber)) {
-      newErrors.phoneNumber = "Geçerli bir telefon numarası giriniz";
+    if (formData.phone && !validatePhone(formData.phone)) {
+      newErrors.phone = "Geçerli bir telefon numarası giriniz";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (): void => {
-    if (validateForm()) {
-      console.log("Bağışçı Kaydediliyor:", formData);
-      alert("Bağışçı başarıyla kaydedildi!");
+  const handleSubmit = async (): Promise<void> => {
+    if (!validateForm()) return;
 
-      setFormData({
-        donorName: "",
-        donorType: "kisi",
-        email: "",
-        phoneNumber: "",
-      });
-      setErrors({});
+    setSubmitError(null);
+
+    const payload = {
+      name: formData.name.trim(),
+      type: formData.type,
+      email: formData.email.trim() || undefined,
+      phone: formData.phone.trim() || undefined,
+    };
+
+    const result = await createDonor(payload);
+
+    if (result.success) {
+      router.push("/donations/donors");
+    } else {
+      setSubmitError(result.error || "Bağışçı eklenirken bir hata oluştu");
     }
   };
 
@@ -100,6 +115,7 @@ const AddDonorPage: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
+
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
             Dış Bağışçı Ekle
           </h1>
@@ -110,6 +126,13 @@ const AddDonorPage: React.FC = () => {
 
         {/* Form Card */}
         <div className="bg-white rounded-xl shadow-lg p-8">
+          {submitError && (
+            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+              <AlertCircle size={18} />
+              <span>{submitError}</span>
+            </div>
+          )}
+
           <div className="space-y-6">
             {/* Bağışçı Tipi Seçimi */}
             <div>
@@ -119,16 +142,15 @@ const AddDonorPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
-                  onClick={() => handleInputChange("donorType", "kisi")}
-                  className={`relative flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-200 ${
-                    formData.donorType === "kisi"
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-300 hover:border-blue-300 hover:bg-gray-50"
-                  }`}
+                  onClick={() => handleInputChange("type", "Kişi")}
+                  className={`relative flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-200 ${formData.type === "Kişi"
+                    ? "border-blue-600 bg-blue-50"
+                    : "border-gray-300 hover:border-blue-300 hover:bg-gray-50"
+                    }`}
                 >
                   <User
                     className={
-                      formData.donorType === "kisi"
+                      formData.type === "Kişi"
                         ? "text-blue-600"
                         : "text-gray-400"
                     }
@@ -136,17 +158,16 @@ const AddDonorPage: React.FC = () => {
                   />
                   <div className="text-left flex-1">
                     <div
-                      className={`font-semibold text-sm ${
-                        formData.donorType === "kisi"
-                          ? "text-blue-600"
-                          : "text-gray-700"
-                      }`}
+                      className={`font-semibold text-sm ${formData.type === "Kişi"
+                        ? "text-blue-600"
+                        : "text-gray-700"
+                        }`}
                     >
                       Kişi
                     </div>
                     <div className="text-xs text-gray-500">Bireysel bağışçı</div>
                   </div>
-                  {formData.donorType === "kisi" && (
+                  {formData.type === "Kişi" && (
                     <div className="absolute top-2 right-2">
                       <div className="bg-blue-600 text-white rounded-full p-1">
                         <Check size={14} />
@@ -157,16 +178,15 @@ const AddDonorPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => handleInputChange("donorType", "kurum")}
-                  className={`relative flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-200 ${
-                    formData.donorType === "kurum"
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-300 hover:border-blue-300 hover:bg-gray-50"
-                  }`}
+                  onClick={() => handleInputChange("type", "Kurum")}
+                  className={`relative flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-200 ${formData.type === "Kurum"
+                    ? "border-blue-600 bg-blue-50"
+                    : "border-gray-300 hover:border-blue-300 hover:bg-gray-50"
+                    }`}
                 >
                   <Building2
                     className={
-                      formData.donorType === "kurum"
+                      formData.type === "Kurum"
                         ? "text-blue-600"
                         : "text-gray-400"
                     }
@@ -174,11 +194,10 @@ const AddDonorPage: React.FC = () => {
                   />
                   <div className="text-left flex-1">
                     <div
-                      className={`font-semibold text-sm ${
-                        formData.donorType === "kurum"
-                          ? "text-blue-600"
-                          : "text-gray-700"
-                      }`}
+                      className={`font-semibold text-sm ${formData.type === "Kurum"
+                        ? "text-blue-600"
+                        : "text-gray-700"
+                        }`}
                     >
                       Kurum
                     </div>
@@ -186,7 +205,7 @@ const AddDonorPage: React.FC = () => {
                       Kurumsal bağışçı
                     </div>
                   </div>
-                  {formData.donorType === "kurum" && (
+                  {formData.type === "Kurum" && (
                     <div className="absolute top-2 right-2">
                       <div className="bg-blue-600 text-white rounded-full p-1">
                         <Check size={14} />
@@ -200,11 +219,11 @@ const AddDonorPage: React.FC = () => {
             {/* Bağışçı/Kurum Adı */}
             <div>
               <label className="block text-base font-medium text-gray-700 mb-2">
-                {formData.donorType === "kisi" ? "Bağışçı Adı" : "Kurum Adı"}{" "}
+                {formData.type === "Kişi" ? "Bağışçı Adı" : "Kurum Adı"}{" "}
                 <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                {formData.donorType === "kisi" ? (
+                {formData.type === "Kişi" ? (
                   <User
                     className="absolute left-4 top-3.5 text-gray-400"
                     size={20}
@@ -217,32 +236,29 @@ const AddDonorPage: React.FC = () => {
                 )}
                 <input
                   type="text"
-                  value={formData.donorName}
+                  value={formData.name}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    handleInputChange("donorName", e.target.value)
+                    handleInputChange("name", e.target.value)
                   }
-                  className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                    errors.donorName ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${errors.name ? "border-red-500" : "border-gray-300"
+                    }`}
                   placeholder={
-                    formData.donorType === "kisi"
+                    formData.type === "Kişi"
                       ? "Örn: Ahmet Yılmaz"
                       : "Örn: ABC Holding A.Ş."
                   }
                 />
               </div>
-              {errors.donorName && (
+              {errors.name && (
                 <div className="mt-2 flex items-center gap-2 text-red-600 text-sm">
                   <AlertCircle size={16} />
-                  <span>{errors.donorName}</span>
+                  <span>{errors.name}</span>
                 </div>
               )}
             </div>
 
             {/* İletişim Bilgileri */}
             <div className=" rounded-lg  ">
-            
-
               <div className="space-y-4">
                 {/* E-posta */}
                 <div>
@@ -260,9 +276,8 @@ const AddDonorPage: React.FC = () => {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handleInputChange("email", e.target.value)
                       }
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-white ${
-                        errors.email ? "border-red-500" : "border-gray-300"
-                      }`}
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-white ${errors.email ? "border-red-500" : "border-gray-300"
+                        }`}
                       placeholder="ornek@email.com"
                     />
                   </div>
@@ -286,44 +301,49 @@ const AddDonorPage: React.FC = () => {
                     />
                     <input
                       type="tel"
-                      value={formData.phoneNumber}
+                      value={formData.phone}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        handleInputChange("phoneNumber", e.target.value)
+                        handleInputChange("phone", e.target.value)
                       }
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-white ${
-                        errors.phoneNumber
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }`}
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-white ${errors.phone
+                        ? "border-red-500"
+                        : "border-gray-300"
+                        }`}
                       placeholder="+90 555 123 45 67"
                     />
                   </div>
-                  {errors.phoneNumber && (
+                  {errors.phone && (
                     <div className="mt-2 flex items-center gap-2 text-red-600 text-sm">
                       <AlertCircle size={16} />
-                      <span>{errors.phoneNumber}</span>
+                      <span>{errors.phone}</span>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            
-
             {/* Submit Button */}
             <div className="flex justify-center pt-4">
               <button
                 onClick={handleSubmit}
-                className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-12 py-3.5 rounded-lg font-semibold text-base hover:from-blue-700 hover:to-indigo-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                disabled={isLoading}
+                className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-12 py-3.5 rounded-lg font-semibold text-base hover:from-blue-700 hover:to-indigo-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                <Check size={20} />
-                <span>Bağışçıyı Kaydet</span>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    <span>Kaydediliyor...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={20} />
+                    <span>Bağışçıyı Kaydet</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
-
-       
       </div>
     </div>
   );
