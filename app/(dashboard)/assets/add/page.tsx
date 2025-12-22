@@ -16,6 +16,8 @@ import {
     MapPin,
     FileText,
     Loader2,
+    Camera,
+    ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,6 +29,7 @@ import {
     CreateAssetPayload,
 } from "@/lib/types/asset.types";
 import useCreateFixedAsset from "@/hooks/useCreateFixedAsset";
+import useUploadFixedAssetImage from "@/hooks/useUploadFixedAssetImage";
 
 interface FormData {
     // Tanımlayıcı Bilgiler
@@ -94,7 +97,9 @@ export default function AddAssetPage() {
     });
 
     const [errors, setErrors] = useState<FormErrors>({});
-    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    const [productImage, setProductImage] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const { uploadImage, isLoading: isUploadingImage } = useUploadFixedAssetImage();
 
     // Get unique main classes
     const mainClasses = useMemo(() => {
@@ -170,16 +175,33 @@ export default function AddAssetPage() {
         }
     };
 
-    // Handle file upload
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (files) {
-            setUploadedFiles((prev) => [...prev, ...Array.from(files)]);
+    // Handle image upload
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                toast.error('Lütfen yalnızca resim dosyası seçin');
+                return;
+            }
+            // Validate file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                toast.error('Resim boyutu 10MB\'dan küçük olmalıdır');
+                return;
+            }
+            setProductImage(file);
+            // Create preview URL
+            const previewUrl = URL.createObjectURL(file);
+            setImagePreview(previewUrl);
         }
     };
 
-    const removeFile = (index: number) => {
-        setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+    const removeImage = () => {
+        setProductImage(null);
+        if (imagePreview) {
+            URL.revokeObjectURL(imagePreview);
+            setImagePreview(null);
+        }
     };
 
     // Validation
@@ -269,6 +291,16 @@ export default function AddAssetPage() {
         const result = await createFixedAsset(apiPayload);
 
         if (result.success) {
+            const assetId = result.data?.data?.id || result.data?.id;
+
+            // Resim varsa yükle
+            if (productImage && assetId) {
+                const imageResult = await uploadImage(assetId, productImage);
+                if (!imageResult.success) {
+                    toast.warning(`Varlık oluşturuldu ancak resim yüklenemedi: ${imageResult.error}`);
+                }
+            }
+
             toast.success("Varlık başarıyla oluşturuldu!");
             router.push("/assets/list");
         } else {
@@ -757,58 +789,59 @@ export default function AddAssetPage() {
                             />
                         </div>
 
-                        {/* Belge Yükleme */}
+                        {/* Ürün Fotoğrafı */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Belge Yükle (Fatura, Garanti Belgesi, Fotoğraf)
+                                Ürün Fotoğrafı
                             </label>
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
-                                <input
-                                    type="file"
-                                    multiple
-                                    onChange={handleFileUpload}
-                                    className="hidden"
-                                    id="file-upload"
-                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                />
-                                <label
-                                    htmlFor="file-upload"
-                                    className="cursor-pointer flex flex-col items-center"
-                                >
-                                    <Upload className="text-gray-400 mb-2" size={32} />
-                                    <span className="text-sm text-gray-600">
-                                        Dosya yüklemek için tıklayın veya sürükleyin
-                                    </span>
-                                    <span className="text-xs text-gray-400 mt-1">
-                                        PDF, JPG, PNG, DOC (Max 10MB)
-                                    </span>
-                                </label>
-                            </div>
 
-                            {/* Yüklenen Dosyalar */}
-                            {uploadedFiles.length > 0 && (
-                                <div className="mt-4 space-y-2">
-                                    {uploadedFiles.map((file, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <FileText size={16} className="text-gray-500" />
-                                                <span className="text-sm text-gray-700">{file.name}</span>
-                                                <span className="text-xs text-gray-400">
-                                                    ({(file.size / 1024).toFixed(1)} KB)
-                                                </span>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeFile(index)}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                <X size={16} />
-                                            </button>
+                            {!imagePreview ? (
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                                    <input
+                                        type="file"
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                        id="image-upload"
+                                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                                    />
+                                    <label
+                                        htmlFor="image-upload"
+                                        className="cursor-pointer flex flex-col items-center"
+                                    >
+                                        <Camera className="text-gray-400 mb-2" size={32} />
+                                        <span className="text-sm text-gray-600">
+                                            Ürün fotoğrafı yüklemek için tıklayın
+                                        </span>
+                                        <span className="text-xs text-gray-400 mt-1">
+                                            JPG, PNG, WEBP (Max 10MB)
+                                        </span>
+                                    </label>
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <div className="border border-gray-300 rounded-lg overflow-hidden">
+                                        <img
+                                            src={imagePreview}
+                                            alt="Ürün önizleme"
+                                            className="w-full h-48 object-contain bg-gray-50"
+                                        />
+                                    </div>
+                                    <div className="mt-2 flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <ImageIcon size={16} className="text-green-600" />
+                                            <span className="text-sm text-gray-700">{productImage?.name}</span>
+                                            <span className="text-xs text-gray-400">
+                                                ({productImage && (productImage.size / 1024).toFixed(1)} KB)
+                                            </span>
                                         </div>
-                                    ))}
+                                        <button
+                                            type="button"
+                                            onClick={removeImage}
+                                            className="text-red-500 hover:text-red-700 p-1"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -819,7 +852,7 @@ export default function AddAssetPage() {
                 <div className="flex justify-center pt-4">
                     <button
                         type="submit"
-                        disabled={!isFormValid || isSubmitting}
+                        disabled={!isFormValid || isSubmitting || isUploadingImage}
                         className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-12 py-4 rounded-xl font-semibold text-base hover:from-blue-700 hover:to-indigo-800 focus:ring-4 focus:ring-blue-300 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {isSubmitting ? (

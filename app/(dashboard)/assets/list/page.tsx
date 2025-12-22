@@ -16,12 +16,18 @@ import {
     Calendar,
     Loader2,
     AlertCircle,
+    ImageIcon,
+    DollarSign,
+    User,
+    Tag,
 } from "lucide-react";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
 import useGetAllFixedAssets, { FixedAsset } from "@/hooks/useGetAllFixedAssets";
 import useUpdateFixedAssetStatus, { FIXED_ASSET_STATUS_OPTIONS, FixedAssetStatus } from "@/hooks/useUpdateFixedAssetStatus";
 import useUpdateFixedAsset, { UpdateFixedAssetPayload } from "@/hooks/useUpdateFixedAsset";
+import { API_ENDPOINTS } from "@/lib/api/endpoints";
+import { MAIN_CLASS_NAMES } from "@/lib/types/asset.types";
 
 // Status için renk belirleme
 const getStatusColor = (status: string) => {
@@ -61,6 +67,10 @@ export default function AssetListPage() {
     const [assetToEdit, setAssetToEdit] = useState<FixedAsset | null>(null);
     const [editFormData, setEditFormData] = useState<UpdateFixedAssetPayload>({});
 
+    // Detail modal states
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [assetToView, setAssetToView] = useState<FixedAsset | null>(null);
+
     // Unique asset classes for filter dropdown
     const assetClasses = useMemo(() => {
         const classes = new Set(assets.map(a => a.assetClass));
@@ -95,6 +105,11 @@ export default function AssetListPage() {
     const handleScrap = (asset: FixedAsset) => {
         setAssetToScrap(asset);
         setIsScrapModalOpen(true);
+    };
+
+    const handleViewDetail = (asset: FixedAsset) => {
+        setAssetToView(asset);
+        setIsDetailModalOpen(true);
     };
 
     const confirmScrap = async () => {
@@ -246,8 +261,8 @@ export default function AssetListPage() {
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                         <option value="">Tüm Sınıflar</option>
-                        {assetClasses.map(ac => (
-                            <option key={ac} value={ac}>{ac}</option>
+                        {Object.values(MAIN_CLASS_NAMES).map(className => (
+                            <option key={className} value={className}>{className}</option>
                         ))}
                     </select>
 
@@ -377,6 +392,7 @@ export default function AssetListPage() {
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-center gap-1">
                                                     <button
+                                                        onClick={() => handleViewDetail(asset)}
                                                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                         title="Detay Gör"
                                                     >
@@ -538,6 +554,141 @@ export default function AssetListPage() {
                             <button onClick={saveEdit} disabled={isUpdatingAsset} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
                                 {isUpdatingAsset && <Loader2 className="w-4 h-4 animate-spin" />}
                                 Kaydet
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Detail View Modal */}
+            <Modal
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                title="Varlık Detayları"
+                size="lg"
+            >
+                {assetToView && (
+                    <div className="space-y-6">
+                        {/* Asset Image */}
+                        <div className="flex justify-center">
+                            <div className="w-full max-w-md">
+                                <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                                    <img
+                                        src={API_ENDPOINTS.fixedAssets.getImage(assetToView.id)}
+                                        alt={assetToView.name}
+                                        className="w-full h-64 object-contain"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                            const parent = target.parentElement;
+                                            if (parent && !parent.querySelector('.no-image-placeholder')) {
+                                                const placeholder = document.createElement('div');
+                                                placeholder.className = 'no-image-placeholder flex flex-col items-center justify-center h-64 text-gray-400';
+                                                placeholder.innerHTML = `
+                                                    <svg class="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                    <span class="text-sm">Resim bulunamadı</span>
+                                                `;
+                                                parent.appendChild(placeholder);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Asset Information */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Tag size={16} className="text-blue-600" />
+                                    <span className="text-sm font-medium text-gray-500">Sicil No</span>
+                                </div>
+                                <p className="text-gray-900 font-semibold">{assetToView.registrationNo}</p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <FileText size={16} className="text-purple-600" />
+                                    <span className="text-sm font-medium text-gray-500">Varlık Adı</span>
+                                </div>
+                                <p className="text-gray-900 font-semibold">{assetToView.name}</p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Building2 size={16} className="text-green-600" />
+                                    <span className="text-sm font-medium text-gray-500">Sınıf / Alt Sınıf</span>
+                                </div>
+                                <p className="text-gray-900 font-semibold">{assetToView.assetClass}</p>
+                                <p className="text-sm text-gray-600">{assetToView.assetSubClass}</p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <DollarSign size={16} className="text-yellow-600" />
+                                    <span className="text-sm font-medium text-gray-500">Maliyet / Net Değer</span>
+                                </div>
+                                <p className="text-gray-900 font-semibold">{formatCurrency(assetToView.costValue)}</p>
+                                <p className="text-sm text-green-600">{formatCurrency(assetToView.netBookValue)} (Net)</p>
+                            </div>
+
+                            {assetToView.brandModel && (
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Monitor size={16} className="text-indigo-600" />
+                                        <span className="text-sm font-medium text-gray-500">Marka / Model</span>
+                                    </div>
+                                    <p className="text-gray-900 font-semibold">{assetToView.brandModel}</p>
+                                </div>
+                            )}
+
+                            {assetToView.responsiblePerson && (
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <User size={16} className="text-pink-600" />
+                                        <span className="text-sm font-medium text-gray-500">Sorumlu Kişi</span>
+                                    </div>
+                                    <p className="text-gray-900 font-semibold">{assetToView.responsiblePerson}</p>
+                                </div>
+                            )}
+
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Calendar size={16} className="text-orange-600" />
+                                    <span className="text-sm font-medium text-gray-500">Edinme Tarihi</span>
+                                </div>
+                                <p className="text-gray-900 font-semibold">
+                                    {assetToView.acquisitionDate ? new Date(assetToView.acquisitionDate).toLocaleDateString('tr-TR') : '-'}
+                                </p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg p-4 md:col-span-2">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <AlertCircle size={16} className="text-gray-600" />
+                                    <span className="text-sm font-medium text-gray-500">Durum</span>
+                                </div>
+                                {getStatusBadge(assetToView.status)}
+                            </div>
+
+                            {assetToView.description && (
+                                <div className="bg-gray-50 rounded-lg p-4 md:col-span-2">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FileText size={16} className="text-gray-600" />
+                                        <span className="text-sm font-medium text-gray-500">Açıklama</span>
+                                    </div>
+                                    <p className="text-gray-900">{assetToView.description}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end pt-4 border-t">
+                            <button
+                                onClick={() => setIsDetailModalOpen(false)}
+                                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                            >
+                                Kapat
                             </button>
                         </div>
                     </div>

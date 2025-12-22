@@ -4,21 +4,7 @@ import useGetAllMembers from '../../../../hooks/getAllMembers';
 
 export default function MemberListPage() {
   // Hook'u kullanarak üyeleri çek
-  const { members, isLoading, isError } = useGetAllMembers();
-
-  const handleEdit = (member: any) => {
-    console.log('Düzenle:', member);
-    // Düzenleme modalı veya sayfasına yönlendirme
-  };
-
-  const handleDelete = (memberId: string) => {
-    console.log('Sil:', memberId);
-    // Silme onayı ve işlemi
-    if (confirm('Bu üyeyi silmek istediğinizden emin misiniz?')) {
-      // Silme işlemi burada yapılacak
-      console.log('Üye silindi:', memberId);
-    }
-  };
+  const { members, isLoading, isError, refetch } = useGetAllMembers();
 
   // Loading durumu
   if (isLoading) {
@@ -51,8 +37,8 @@ export default function MemberListPage() {
             <div className="text-red-500 text-lg mb-4">
               Veriler yüklenirken bir hata oluştu
             </div>
-            <button 
-              onClick={() => window.location.reload()} 
+            <button
+              onClick={() => refetch?.()}
               className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
             >
               Tekrar Dene
@@ -65,10 +51,9 @@ export default function MemberListPage() {
 
   return (
     <div className="p-6">
-      <MemberTable 
-        members={members} // Hook'tan gelen veriyi props olarak gönder
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+      <MemberTable
+        members={members}
+        refetch={refetch}
       />
     </div>
   );

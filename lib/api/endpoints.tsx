@@ -146,5 +146,29 @@ export const API_ENDPOINTS = {
 
     // PATCH - Sabit varlık durumu güncelle (PATCH /fixed-assets/:id/status)
     updateStatus: (id: number) => `${API_BASE_URL}/fixed-assets/${id}/status`,
+
+    // POST - Sabit varlık resmi yükle (POST /fixed-assets/:id/image)
+    uploadImage: (id: number) => `${API_BASE_URL}/fixed-assets/${id}/image`,
+
+    // GET - Sabit varlık resmini getir (GET /fixed-assets/:id/image)
+    getImage: (id: number) => `${API_BASE_URL}/fixed-assets/${id}/image`,
+  },
+
+  // 📄 DÖKÜMAN YÖNETİMİ (Documents)
+  documents: {
+    // POST - Döküman yükle (FormData: file, name, category, description)
+    upload: `${API_BASE_URL}/documents`,
+
+    // GET - Tüm dökümanları getir
+    getAll: `${API_BASE_URL}/documents`,
+
+    // GET - ID'ye göre döküman getir
+    getById: (id: number) => `${API_BASE_URL}/documents/${id}`,
+
+    // DELETE - Döküman sil
+    delete: (id: number) => `${API_BASE_URL}/documents/${id}`,
+
+    // GET - Döküman indir/görüntüle
+    download: (id: number) => `${API_BASE_URL}/documents/${id}/download`,
   },
 };

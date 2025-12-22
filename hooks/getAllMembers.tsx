@@ -3,7 +3,7 @@ import fetcher from '../lib/api/fetcher';
 import { API_ENDPOINTS } from '../lib/api/endpoints';
 
 export default function useGetAllMembers() {
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     API_ENDPOINTS.members.getAllMembers,
     fetcher,
     {
@@ -30,5 +30,6 @@ export default function useGetAllMembers() {
     members,
     isLoading,
     isError: error,
+    refetch: mutate,
   };
 }
