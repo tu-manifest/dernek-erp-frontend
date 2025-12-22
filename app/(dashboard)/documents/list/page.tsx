@@ -110,8 +110,8 @@ export default function DocumentListPage() {
   }, [documents, searchQuery, filterCategory]);
 
   const handleView = (doc: Document) => {
-    // Yeni sekmede aç
-    window.open(API_ENDPOINTS.documents.download(doc.id), '_blank');
+    // Yeni sekmede görüntüle
+    window.open(API_ENDPOINTS.documents.view(doc.id), '_blank');
   };
 
   const handleDownload = (doc: Document) => {
@@ -230,19 +230,6 @@ export default function DocumentListPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
-          <p className="text-sm text-gray-500">Toplam Döküman</p>
-          <p className="text-2xl font-bold text-gray-900">{summary.totalDocuments}</p>
-        </div>
-        {Object.entries(summary.categorySummary).slice(0, 3).map(([cat, count]) => (
-          <div key={cat} className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
-            <p className="text-sm text-gray-500 truncate">{cat}</p>
-            <p className="text-2xl font-bold text-blue-600">{count}</p>
-          </div>
-        ))}
-      </div>
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">

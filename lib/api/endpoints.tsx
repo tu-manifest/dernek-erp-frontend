@@ -168,7 +168,10 @@ export const API_ENDPOINTS = {
     // DELETE - Döküman sil
     delete: (id: number) => `${API_BASE_URL}/documents/${id}`,
 
-    // GET - Döküman indir/görüntüle
+    // GET - Döküman indir
     download: (id: number) => `${API_BASE_URL}/documents/${id}/download`,
+
+    // GET - Döküman görüntüle (yeni sekmede)
+    view: (id: number) => `${API_BASE_URL}/documents/${id}/view`,
   },
 };
