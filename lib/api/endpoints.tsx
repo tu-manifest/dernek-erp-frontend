@@ -193,6 +193,9 @@ export const API_ENDPOINTS = {
     // DELETE - Borç sil
     deleteDebt: (id: number) => `${API_BASE_URL}/finance/debt/${id}`,
 
+    // GET - Borçlu listesi (özet)
+    getDebtors: `${API_BASE_URL}/finance/debtors`,
+
     // GET - Borçlu özeti (üye veya dış bağışçı)
     getDebtorSummary: (type: 'MEMBER' | 'EXTERNAL', id: number) =>
       `${API_BASE_URL}/finance/debtor/${type}/${id}/summary`,
