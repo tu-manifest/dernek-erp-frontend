@@ -120,7 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
     },
     {
       id: "activity-logs",
-      title: "Aktivite Logları",
+      title: "Aktivite Kayıtları",
       icon: ClipboardList,
       path: "/activity-logs",
       single: true,

@@ -212,7 +212,7 @@ export default function Page() {
                     Ödenen
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Kalan Bakiye
+                    Kalan Borç
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     İşlemler
@@ -266,17 +266,17 @@ export default function Page() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-semibold text-gray-900">
-                          {debtor.totalDebt.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
+                          {(debtor.totalDebt ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-medium text-green-600">
-                          {debtor.totalPaid.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
+                          {(debtor.totalPaid ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-bold text-red-600">
-                          {debtor.totalOutstanding.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
+                          {(debtor.totalOutstanding ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">

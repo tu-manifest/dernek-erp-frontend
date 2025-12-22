@@ -207,4 +207,21 @@ export const API_ENDPOINTS = {
     // POST - Toplu tahsilat kaydı
     createBulkCollection: `${API_BASE_URL}/finance/collection/bulk`,
   },
+
+  // 📊 AKTİVİTE LOG YÖNETİMİ (Activity Logs)
+  activityLogs: {
+    // GET - Son aktivite logları (limit parametreli)
+    getRecent: (limit: number = 10) => `${API_BASE_URL}/activity-logs/recent?limit=${limit}`,
+
+    // GET - Tüm logları getir (filtreleme destekli)
+    // Query params: ?page=1&limit=50&entityType=Event&action=CREATE&startDate=2025-01-01&endDate=2025-12-31
+    getAll: `${API_BASE_URL}/activity-logs`,
+
+    // GET - Entity bazlı logları getir
+    getByEntity: (entityType: string, entityId: number) =>
+      `${API_BASE_URL}/activity-logs/entity/${entityType}/${entityId}`,
+
+    // GET - İstatistik verileri
+    getStats: `${API_BASE_URL}/activity-logs/stats`,
+  },
 };

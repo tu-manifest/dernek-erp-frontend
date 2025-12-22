@@ -69,10 +69,13 @@ export default function TahsilatKaydiForm({ onSubmit, isLoading = false }: Tahsi
   const { donors, isLoading: donorsLoading } = useGetAllDonors();
 
   // Seçili borçlunun borçlarını çek
-  const { summary, debts, isLoading: summaryLoading } = useGetDebtorSummary(
-    formData.borcluId ? formData.borcluTur : null,
+  // Seçili borçlunun borçlarını çek
+  const { summary, isLoading: summaryLoading } = useGetDebtorSummary(
+    formData.borcluId ? formData.borcluTur : "MEMBER", // Prevent null type error if needed, or handle effectively. Hook handles null.
     formData.borcluId ? formData.borcluId : null
   );
+
+  const debts = summary?.debts || [];
 
   // Borçluları birleştir
   const borcluListesi: Borclu[] = [
@@ -198,8 +201,8 @@ export default function TahsilatKaydiForm({ onSubmit, isLoading = false }: Tahsi
           type="button"
           onClick={() => setActiveTab('single')}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'single'
-              ? 'bg-white text-blue-700 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
+            ? 'bg-white text-blue-700 shadow-sm'
+            : 'text-gray-500 hover:text-gray-700'
             }`}
         >
           <CreditCard size={18} />
@@ -209,8 +212,8 @@ export default function TahsilatKaydiForm({ onSubmit, isLoading = false }: Tahsi
           type="button"
           onClick={() => setActiveTab('bulk')}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === 'bulk'
-              ? 'bg-white text-purple-700 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
+            ? 'bg-white text-purple-700 shadow-sm'
+            : 'text-gray-500 hover:text-gray-700'
             }`}
         >
           <Layers size={18} />
@@ -358,7 +361,7 @@ export default function TahsilatKaydiForm({ onSubmit, isLoading = false }: Tahsi
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium text-purple-900">Toplam Açık Borç</span>
             <span className="text-lg font-bold text-purple-700">
-              {summary.totalOutstanding.toLocaleString('tr-TR')} {selectedBorc?.currency || 'TL'}
+              {(summary.remainingDebt ?? 0).toLocaleString('tr-TR')} {selectedBorc?.currency || 'TL'}
             </span>
           </div>
           <p className="text-xs text-purple-600">
@@ -377,8 +380,8 @@ export default function TahsilatKaydiForm({ onSubmit, isLoading = false }: Tahsi
               type="button"
               onClick={() => handleTahsilatSekliChange(sekil)}
               className={`flex items-center gap-3 p-3 border rounded-lg text-sm text-left transition-all ${formData.tahsilatSekli === sekil
-                  ? "bg-slate-800 text-white border-slate-800 shadow-md transform scale-[1.02]"
-                  : "bg-white hover:bg-slate-50 border-gray-200 text-slate-700"
+                ? "bg-slate-800 text-white border-slate-800 shadow-md transform scale-[1.02]"
+                : "bg-white hover:bg-slate-50 border-gray-200 text-slate-700"
                 }`}
             >
               <span className={`flex items-center justify-center w-6 h-6 rounded-full ${formData.tahsilatSekli === sekil ? 'bg-white/20' : 'bg-slate-100'}`}>
@@ -453,7 +456,7 @@ export default function TahsilatKaydiForm({ onSubmit, isLoading = false }: Tahsi
                       .filter(d => d.status !== 'Paid') // Sadece ödenmemişleri göster
                       .map(borc => (
                         <option key={borc.id} value={borc.id}>
-                          {borc.debtType} - Kalan: {(parseFloat(borc.amount) - parseFloat(borc.collectedAmount)).toLocaleString()} {borc.currency} (Vade: {new Date(borc.dueDate).toLocaleDateString()})
+                          {borc.debtType} - Kalan: {(borc.remainingAmount ?? 0).toLocaleString()} {borc.currency} (Vade: {new Date(borc.dueDate).toLocaleDateString()})
                         </option>
                       ))}
                   </select>
@@ -476,16 +479,16 @@ export default function TahsilatKaydiForm({ onSubmit, isLoading = false }: Tahsi
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Toplam Tutar</p>
-                        <p className="font-medium text-gray-900">{parseFloat(selectedBorc.amount).toLocaleString()} {selectedBorc.currency}</p>
+                        <p className="font-medium text-gray-900">{(selectedBorc.amount ?? 0).toLocaleString()} {selectedBorc.currency}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Şimdiye Kadar Ödenen</p>
-                        <p className="font-medium text-green-600">{parseFloat(selectedBorc.collectedAmount).toLocaleString()} {selectedBorc.currency}</p>
+                        <p className="font-medium text-green-600">{(selectedBorc.collectedAmount ?? 0).toLocaleString()} {selectedBorc.currency}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Kalan Bakiye</p>
                         <p className="font-medium text-red-600 text-lg">
-                          {(parseFloat(selectedBorc.amount) - parseFloat(selectedBorc.collectedAmount)).toLocaleString()} {selectedBorc.currency}
+                          {(selectedBorc.remainingAmount ?? 0).toLocaleString()} {selectedBorc.currency}
                         </p>
                       </div>
                     </div>
@@ -511,8 +514,8 @@ export default function TahsilatKaydiForm({ onSubmit, isLoading = false }: Tahsi
       {/* Actions */}
       <div className="flex justify-center pt-2">
         <button type="submit" disabled={isLoading} className={`w-full md:w-auto px-8 py-3 rounded-lg text-white font-medium shadow-md transition-all hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed ${activeTab === 'single'
-            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
-            : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
+          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+          : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
           }`}>
           {isLoading ? "İşleniyor..." : activeTab === 'single' ? "Tahsilatı Kaydet" : "Toplu Tahsilatı Dağıt"}
         </button>

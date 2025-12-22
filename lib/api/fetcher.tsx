@@ -13,10 +13,19 @@ const fetcher = async (
   console.log("💥 Gelen URL:", url);
   console.log("💥 typeof URL:", typeof url);
   let fullUrl = url;
+
+  // localStorage'dan token'ı al (client-side'da)
+  let authToken: string | null = null;
+  if (typeof window !== "undefined") {
+    authToken = localStorage.getItem("authToken");
+  }
+
   let fetchOptions: RequestInit = {
     method,
     headers: {
       "Content-Type": "application/json",
+      // Token varsa otomatik olarak Authorization header'ı ekle
+      ...(authToken && { Authorization: `Bearer ${authToken}` }),
       ...headers,
     },
   };
