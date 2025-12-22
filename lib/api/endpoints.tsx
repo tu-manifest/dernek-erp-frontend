@@ -239,4 +239,31 @@ export const API_ENDPOINTS = {
     // GET - Dashboard istatistikleri
     stats: `${API_BASE_URL}/dashboard/stats`,
   },
+
+  // 💰 BÜTÇE PLANLAMA (Budget)
+  budget: {
+    // POST - Yeni bütçe planı oluştur (mevcut yılı siler, yenisini oluşturur)
+    createNew: `${API_BASE_URL}/budget/new`,
+
+    // PUT - Mevcut planı kaydet/güncelle
+    save: `${API_BASE_URL}/budget/save`,
+
+    // GET - Belirli yılın bütçe planını getir (gelir/gider gruplu, toplamlar dahil)
+    getByYear: (year: number) => `${API_BASE_URL}/budget/${year}`,
+
+    // DELETE - Belirli yılın tüm planını sil
+    deleteByYear: (year: number) => `${API_BASE_URL}/budget/${year}`,
+
+    // GET - Bütçe planının var olup olmadığını kontrol eder
+    exists: (year: number) => `${API_BASE_URL}/budget/${year}/exists`,
+
+    // GET - Mevcut bütçe yıllarının listesini getirir
+    getYears: `${API_BASE_URL}/budget/years`,
+
+    // PUT - Tek bir bütçe kalemini güncelle
+    updateItem: (id: number) => `${API_BASE_URL}/budget/item/${id}`,
+
+    // DELETE - Tek bir bütçe kalemini sil
+    deleteItem: (id: number) => `${API_BASE_URL}/budget/item/${id}`,
+  },
 };
