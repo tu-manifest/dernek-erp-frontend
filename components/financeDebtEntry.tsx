@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, User } from "lucide-react";
+import useGetAllMembers from "../hooks/getAllMembers";
+import useGetAllDonors from "../hooks/useGetAllDonors";
 
 interface Borclu {
-  id: string;
+  id: number;
   ad: string;
   tur: "uye" | "dis_kurum";
 }
 
 interface BorcFormData {
-  borcluId: string;
+  borcluId: number;
+  borcluTur: "uye" | "dis_kurum";
   borcluAd: string;
   borcTuru: string;
   borcBedeli: string;
@@ -44,7 +47,8 @@ const currencySymbol = (c: string) =>
 
 export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGirisiFormProps) {
   const [formData, setFormData] = useState<BorcFormData>({
-    borcluId: "",
+    borcluId: 0,
+    borcluTur: "uye",
     borcluAd: "",
     borcTuru: "",
     borcBedeli: "",
@@ -56,15 +60,36 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
   const [searchTerm, setSearchTerm] = useState("");
   const [showBorcluDropdown, setShowBorcluDropdown] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Örnek borçlu listesi - API'den çekilecek
+  // API'den üyeleri ve dış bağışçıları çek
+  const { members, isLoading: membersLoading } = useGetAllMembers();
+  const { donors, isLoading: donorsLoading } = useGetAllDonors();
+
+  // Üyeler ve dış bağışçıları birleştir
   const borcluListesi: Borclu[] = [
-    { id: "1", ad: "Ahmet Yılmaz", tur: "uye" },
-    { id: "2", ad: "Fatma Demir", tur: "uye" },
-    { id: "3", ad: "Mehmet Kaya", tur: "uye" },
-    { id: "4", ad: "ABC Ltd. Şti.", tur: "dis_kurum" },
-    { id: "5", ad: "XYZ İnşaat A.Ş.", tur: "dis_kurum" }
+    ...members.map((m: any) => ({
+      id: m.id,
+      ad: m.fullName || `${m.firstName} ${m.lastName}`,
+      tur: "uye" as const
+    })),
+    ...donors.map((d: any) => ({
+      id: d.id,
+      ad: d.name,
+      tur: "dis_kurum" as const
+    }))
   ];
+
+  // Dışarı tıklamada dropdown'ı kapat
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowBorcluDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const filteredBorcluler = borcluListesi.filter(b =>
     b.ad.toLowerCase().includes((searchTerm || formData.borcluAd).toLowerCase())
@@ -74,6 +99,7 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
     setFormData({
       ...formData,
       borcluId: borclu.id,
+      borcluTur: borclu.tur,
       borcluAd: borclu.ad
     });
     setSearchTerm("");
@@ -125,12 +151,12 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
     }
   };
 
+  const apiLoading = membersLoading || donorsLoading;
+
   return (
     <form onSubmit={handleSubmit} className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg p-6 md:p-8 space-y-6 border border-gray-100">
-      {/* Not: Üst seviye sayfada zaten başlık gösteriliyorsa başlık burada kaldırıldı. */}
-
       {/* Borçlu Seçimi */}
-      <div>
+      <div ref={dropdownRef}>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Borçlu <span className="text-red-500">*</span>
         </label>
@@ -151,23 +177,23 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
                 } else {
                   setShowBorcluDropdown(false);
                 }
-                // if user types, clear selected borcluId
                 if (formData.borcluAd) {
-                  setFormData(prev => ({ ...prev, borcluId: "", borcluAd: "" }));
+                  setFormData(prev => ({ ...prev, borcluId: 0, borcluAd: "", borcluTur: "uye" }));
                 }
               }}
               onFocus={() => {
                 if (!formData.borcluAd) setShowBorcluDropdown(true);
               }}
-              placeholder="Borçlu adı yazarak arayın..."
-              className="flex-1 px-3 py-2 outline-none text-sm"
+              placeholder={apiLoading ? "Yükleniyor..." : "Borçlu adı yazarak arayın..."}
+              disabled={apiLoading}
+              className="flex-1 px-3 py-2 outline-none text-sm disabled:bg-gray-50"
             />
 
             <div className="flex items-center gap-2 px-2">
-              { (formData.borcluAd || searchTerm) && (
+              {(formData.borcluAd || searchTerm) && (
                 <button
                   type="button"
-                  onClick={() => { setSearchTerm(""); setFormData(prev => ({ ...prev, borcluId: "", borcluAd: "" })); setShowBorcluDropdown(false); }}
+                  onClick={() => { setSearchTerm(""); setFormData(prev => ({ ...prev, borcluId: 0, borcluAd: "", borcluTur: "uye" })); setShowBorcluDropdown(false); }}
                   className="p-1 rounded-md text-gray-500 hover:bg-gray-100"
                   aria-label="Temizle"
                 >
@@ -186,10 +212,14 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
 
           {showBorcluDropdown && (
             <div className="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-              {filteredBorcluler.length > 0 ? (
+              {apiLoading ? (
+                <div className="px-4 py-4 text-sm text-gray-500 text-center">
+                  Yükleniyor...
+                </div>
+              ) : filteredBorcluler.length > 0 ? (
                 filteredBorcluler.map(borclu => (
                   <button
-                    key={borclu.id}
+                    key={`${borclu.tur}-${borclu.id}`}
                     type="button"
                     onClick={() => handleBorcluSecimi(borclu)}
                     className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors border-b last:border-b-0 flex items-center justify-between"
@@ -197,11 +227,11 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
                     <div>
                       <p className="font-medium text-gray-900">{borclu.ad}</p>
                       <p className="text-xs text-gray-500">
-                        {borclu.tur === "uye" ? "Üye" : "Dış Kurum"}
+                        {borclu.tur === "uye" ? "Üye" : "Dış Bağışçı"}
                       </p>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded ${borclu.tur === "uye" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
-                      {borclu.tur === "uye" ? "Üye" : "Dış Kurum"}
+                      {borclu.tur === "uye" ? "Üye" : "Dış Bağışçı"}
                     </span>
                   </button>
                 ))
@@ -221,14 +251,18 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
         {formData.borcluAd && (
           <div className="mt-3 flex items-center gap-3 bg-blue-50 p-3 rounded-md border border-blue-100">
             <div className="text-sm text-blue-900 font-medium">{formData.borcluAd}</div>
+            <span className={`text-xs px-2 py-1 rounded ${formData.borcluTur === "uye" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+              {formData.borcluTur === "uye" ? "Üye" : "Dış Bağışçı"}
+            </span>
             <div className="ml-auto text-xs text-slate-500">Seçildi</div>
             <button
               type="button"
               onClick={() => {
                 setFormData(prev => ({
                   ...prev,
-                  borcluId: "",
-                  borcluAd: ""
+                  borcluId: 0,
+                  borcluAd: "",
+                  borcluTur: "uye"
                 }));
                 setSearchTerm("");
               }}
@@ -261,7 +295,6 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
                 </option>
               ))}
             </select>
-            {/* Etiket ikonu kaldırıldı; native ok kullanılacak */}
           </div>
           {errors.borcTuru && <p className="text-red-500 text-sm mt-1">{errors.borcTuru}</p>}
         </div>
@@ -323,7 +356,6 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
               <option value="EUR">EUR (€)</option>
               <option value="GBP">GBP (£)</option>
             </select>
-            {/* Fazladan ikon kaldırıldı; native ok kullanılacak */}
           </div>
         </div>
       </div>
@@ -341,34 +373,14 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
         />
       </div>
 
-      {/* Actions - butonları ortaya hizaladım */}
-      <div className="flex flex-col md:flex-row gap-3 items-center justify-center">
+      {/* Actions */}
+      <div className="flex justify-center">
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2 rounded-md transition-shadow shadow-sm disabled:opacity-60"
+          className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isLoading ? "Kaydediliyor..." : "Borcu Kaydet"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setFormData({
-              borcluId: "",
-              borcluAd: "",
-              borcTuru: "",
-              borcBedeli: "",
-              paraCinsi: "TL",
-              vadeTarihi: "",
-              aciklama: ""
-            });
-            setSearchTerm("");
-            setErrors({});
-          }}
-          className="w-full md:w-auto px-4 py-2 border border-gray-200 rounded-md text-sm hover:bg-gray-50"
-        >
-          Temizle
         </button>
       </div>
     </form>

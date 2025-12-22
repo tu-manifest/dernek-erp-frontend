@@ -174,4 +174,34 @@ export const API_ENDPOINTS = {
     // GET - Döküman görüntüle (yeni sekmede)
     view: (id: number) => `${API_BASE_URL}/documents/${id}/view`,
   },
+
+  // 💰 FİNANS YÖNETİMİ (Debt & Collection)
+  finance: {
+    // Borç (Debt) İşlemleri
+    // POST - Yeni borç oluştur
+    createDebt: `${API_BASE_URL}/finance/debt`,
+
+    // GET - Tüm borçları getir
+    getAllDebts: `${API_BASE_URL}/finance/debt`,
+
+    // GET - ID'ye göre borç detayı getir
+    getDebtById: (id: number) => `${API_BASE_URL}/finance/debt/${id}`,
+
+    // PUT - Borç güncelle
+    updateDebt: (id: number) => `${API_BASE_URL}/finance/debt/${id}`,
+
+    // DELETE - Borç sil
+    deleteDebt: (id: number) => `${API_BASE_URL}/finance/debt/${id}`,
+
+    // GET - Borçlu özeti (üye veya dış bağışçı)
+    getDebtorSummary: (type: 'MEMBER' | 'EXTERNAL', id: number) =>
+      `${API_BASE_URL}/finance/debtor/${type}/${id}/summary`,
+
+    // Tahsilat (Collection) İşlemleri
+    // POST - Tekil tahsilat kaydı
+    createCollection: `${API_BASE_URL}/finance/collection`,
+
+    // POST - Toplu tahsilat kaydı
+    createBulkCollection: `${API_BASE_URL}/finance/collection/bulk`,
+  },
 };
