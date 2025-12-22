@@ -167,6 +167,8 @@ export default function LoginPage() {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("admin", JSON.stringify(data.admin));
       localStorage.setItem("userEmail", data.admin.email);
+      // Gerçek login olduğunda demo flag'ini temizle
+      localStorage.removeItem("isDemo");
 
       toast.success("Giriş başarılı!");
 

@@ -118,6 +118,13 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       path: "/dashboard",
       single: true,
     },
+    {
+      id: "activity-logs",
+      title: "Aktivite Logları",
+      icon: ClipboardList,
+      path: "/activity-logs",
+      single: true,
+    },
 
     {
       id: "members",

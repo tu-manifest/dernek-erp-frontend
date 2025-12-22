@@ -95,11 +95,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Save to state
             setToken(data.token);
             setAdmin(data.admin);
+            setIsDemo(false); // Gerçek login olduğunda demo modunu kapat
 
             // Persist to localStorage
             localStorage.setItem("authToken", data.token);
             localStorage.setItem("admin", JSON.stringify(data.admin));
             localStorage.setItem("userEmail", data.admin.email);
+            localStorage.removeItem("isDemo"); // Demo flag'ini temizle
         }
 
         return data;
