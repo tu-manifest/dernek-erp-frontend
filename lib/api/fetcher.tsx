@@ -1,6 +1,6 @@
 // lib/api/fetcher.ts
 interface FetcherOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   payload?: Record<string, any>;
   headers?: Record<string, string>;
 }

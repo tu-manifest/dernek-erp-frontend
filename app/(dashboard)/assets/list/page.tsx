@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import {
     Search,
-    Plus,
     Eye,
     Edit,
     Trash2,
@@ -16,193 +14,148 @@ import {
     Globe,
     Filter,
     Calendar,
-    TrendingDown,
+    Loader2,
+    AlertCircle,
 } from "lucide-react";
-import {
-    Asset,
-    AssetStatus,
-    VUK_ASSET_CLASSES,
-    MAIN_CLASS_NAMES,
-    LOCATIONS,
-    STATUS_LABELS,
-    AssetMainClass
-} from "@/lib/types/asset.types";
 import Modal from "@/components/Modal";
 import { toast } from "sonner";
+import useGetAllFixedAssets, { FixedAsset } from "@/hooks/useGetAllFixedAssets";
+import useUpdateFixedAssetStatus, { FIXED_ASSET_STATUS_OPTIONS, FixedAssetStatus } from "@/hooks/useUpdateFixedAssetStatus";
+import useUpdateFixedAsset, { UpdateFixedAssetPayload } from "@/hooks/useUpdateFixedAsset";
 
-// Mock data for demonstration
-const MOCK_ASSETS: Asset[] = [
-    {
-        id: "1",
-        code: "SV-2024-001",
-        name: "Dell Latitude 5540 Laptop",
-        subClassId: "demirbas_bilgisayar",
-        serialOrPlate: "ABC123456",
-        brandModel: "Dell Latitude 5540",
-        costValue: 45000,
-        currency: "TRY",
-        acquisitionDate: "2024-01-15",
-        invoiceNo: "FTR-2024-0001",
-        supplier: "Teknoloji A.Ş.",
-        usefulLife: 4,
-        depreciationRate: 25,
-        depreciationMethod: "Normal Amortisman",
-        depreciationStartDate: "2024-01-15",
-        location: "Muhasebe Ofisi",
-        responsiblePerson: "Ahmet Yılmaz",
-        status: "active",
-        warrantyEndDate: "2026-01-15",
-        accumulatedDepreciation: 11250,
-        netBookValue: 33750,
-    },
-    {
-        id: "2",
-        code: "SV-2024-002",
-        name: "Ford Transit Minibüs",
-        subClassId: "tasit_minibus",
-        serialOrPlate: "34 ABC 123",
-        brandModel: "Ford Transit",
-        costValue: 1250000,
-        currency: "TRY",
-        acquisitionDate: "2024-03-01",
-        invoiceNo: "FTR-2024-0045",
-        supplier: "Ford Yetkili Bayi",
-        usefulLife: 7,
-        depreciationRate: 14.28,
-        depreciationMethod: "Normal Amortisman",
-        depreciationStartDate: "2024-03-01",
-        location: "Genel Merkez",
-        responsiblePerson: "Mehmet Kaya",
-        status: "active",
-        accumulatedDepreciation: 148500,
-        netBookValue: 1101500,
-    },
-    {
-        id: "3",
-        code: "SV-2023-015",
-        name: "Dernek Merkezi İdari Masa Seti",
-        subClassId: "demirbas_mobilya",
-        brandModel: "Ofis Mobilya",
-        costValue: 25000,
-        currency: "TRY",
-        acquisitionDate: "2023-06-01",
-        invoiceNo: "FTR-2023-0089",
-        usefulLife: 5,
-        depreciationRate: 20,
-        depreciationMethod: "Normal Amortisman",
-        depreciationStartDate: "2023-06-01",
-        location: "Genel Merkez",
-        status: "active",
-        accumulatedDepreciation: 7500,
-        netBookValue: 17500,
-    },
-    {
-        id: "4",
-        code: "SV-2022-008",
-        name: "Güvenlik Kamera Sistemi",
-        subClassId: "tesis_guvenlik",
-        serialOrPlate: "CAM-2022-001",
-        brandModel: "Hikvision Pro",
-        costValue: 35000,
-        currency: "TRY",
-        acquisitionDate: "2022-01-01",
-        usefulLife: 5,
-        depreciationRate: 20,
-        depreciationMethod: "Normal Amortisman",
-        depreciationStartDate: "2022-01-01",
-        location: "Genel Merkez",
-        status: "broken",
-        accumulatedDepreciation: 21000,
-        netBookValue: 14000,
-    },
-    {
-        id: "5",
-        code: "SV-2020-003",
-        name: "Eski Yazıcı - Canon",
-        subClassId: "demirbas_bilgisayar",
-        serialOrPlate: "CNX123",
-        brandModel: "Canon ImageClass",
-        costValue: 8000,
-        currency: "TRY",
-        acquisitionDate: "2020-01-01",
-        usefulLife: 4,
-        depreciationRate: 25,
-        depreciationMethod: "Normal Amortisman",
-        depreciationStartDate: "2020-01-01",
-        location: "Depo",
-        status: "scrapped",
-        accumulatedDepreciation: 8000,
-        netBookValue: 0,
-    },
-];
-
-const getMainClassIcon = (mainClass: AssetMainClass) => {
-    switch (mainClass) {
-        case "binalar": return Building2;
-        case "tesis": return Wrench;
-        case "tasitlar": return Car;
-        case "demirbaslar": return Monitor;
-        case "ozel": return FileText;
-        case "maddi_olmayan": return Globe;
-        default: return FileText;
+// Status için renk belirleme
+const getStatusColor = (status: string) => {
+    switch (status) {
+        case 'Kullanımda': return { bg: 'bg-green-100', text: 'text-green-800' };
+        case 'Arızalı': return { bg: 'bg-yellow-100', text: 'text-yellow-800' };
+        case 'Hurdaya Çekilmiş': return { bg: 'bg-red-100', text: 'text-red-800' };
+        default: return { bg: 'bg-gray-100', text: 'text-gray-800' };
     }
 };
 
+// Asset sınıfına göre ikon belirleme
+const getAssetClassIcon = (assetClass: string) => {
+    const lowerClass = assetClass?.toLowerCase() || '';
+    if (lowerClass.includes('bina')) return Building2;
+    if (lowerClass.includes('taşıt') || lowerClass.includes('araç')) return Car;
+    if (lowerClass.includes('bilgisayar') || lowerClass.includes('demirbaş')) return Monitor;
+    if (lowerClass.includes('tesis') || lowerClass.includes('makine')) return Wrench;
+    if (lowerClass.includes('maddi olmayan')) return Globe;
+    return FileText;
+};
+
 export default function AssetListPage() {
-    const router = useRouter();
+    const { assets, summary, isLoading, isError, refetch } = useGetAllFixedAssets();
+    const { updateStatus, isLoading: isUpdatingStatus } = useUpdateFixedAssetStatus();
+    const { updateAsset, isLoading: isUpdatingAsset } = useUpdateFixedAsset();
+
     const [searchQuery, setSearchQuery] = useState("");
     const [filterClass, setFilterClass] = useState<string>("");
     const [filterStatus, setFilterStatus] = useState<string>("");
-    const [filterLocation, setFilterLocation] = useState<string>("");
-    const [isScrapModalOpen, setIsScrapModalOpen] = useState(false);
-    const [assetToScrap, setAssetToScrap] = useState<Asset | null>(null);
 
-    // Get unique main classes from VUK data
-    const mainClasses = useMemo(() => {
-        const classes = new Set(VUK_ASSET_CLASSES.map(c => c.mainClass));
-        return Array.from(classes);
-    }, []);
+    // Modal states
+    const [isScrapModalOpen, setIsScrapModalOpen] = useState(false);
+    const [assetToScrap, setAssetToScrap] = useState<FixedAsset | null>(null);
+
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [assetToEdit, setAssetToEdit] = useState<FixedAsset | null>(null);
+    const [editFormData, setEditFormData] = useState<UpdateFixedAssetPayload>({});
+
+    // Unique asset classes for filter dropdown
+    const assetClasses = useMemo(() => {
+        const classes = new Set(assets.map(a => a.assetClass));
+        return Array.from(classes).filter(Boolean);
+    }, [assets]);
 
     // Filter assets
     const filteredAssets = useMemo(() => {
-        return MOCK_ASSETS.filter(asset => {
-            const subClass = VUK_ASSET_CLASSES.find(c => c.id === asset.subClassId);
-
+        return assets.filter(asset => {
             // Search filter
             if (searchQuery) {
                 const query = searchQuery.toLowerCase();
                 const matchesSearch =
-                    asset.code.toLowerCase().includes(query) ||
-                    asset.name.toLowerCase().includes(query) ||
-                    asset.serialOrPlate?.toLowerCase().includes(query) ||
+                    asset.registrationNo?.toLowerCase().includes(query) ||
+                    asset.name?.toLowerCase().includes(query) ||
                     asset.brandModel?.toLowerCase().includes(query) ||
-                    subClass?.name.toLowerCase().includes(query);
+                    asset.assetClass?.toLowerCase().includes(query) ||
+                    asset.assetSubClass?.toLowerCase().includes(query);
                 if (!matchesSearch) return false;
             }
 
             // Class filter
-            if (filterClass && subClass?.mainClass !== filterClass) return false;
+            if (filterClass && asset.assetClass !== filterClass) return false;
 
             // Status filter
             if (filterStatus && asset.status !== filterStatus) return false;
 
-            // Location filter
-            if (filterLocation && asset.location !== filterLocation) return false;
-
             return true;
         });
-    }, [searchQuery, filterClass, filterStatus, filterLocation]);
+    }, [assets, searchQuery, filterClass, filterStatus]);
 
-    const handleScrap = (asset: Asset) => {
+    const handleScrap = (asset: FixedAsset) => {
         setAssetToScrap(asset);
         setIsScrapModalOpen(true);
     };
 
-    const confirmScrap = () => {
+    const confirmScrap = async () => {
         if (assetToScrap) {
-            toast.success(`${assetToScrap.name} hurdaya ayrıldı!`);
+            const result = await updateStatus(assetToScrap.id, 'Hurdaya Çekilmiş');
+            if (result.success) {
+                toast.success(`${assetToScrap.name} hurdaya ayrıldı!`);
+                refetch();
+            } else {
+                toast.error(result.error || 'Bir hata oluştu');
+            }
             setIsScrapModalOpen(false);
             setAssetToScrap(null);
+        }
+    };
+
+    const handleEdit = (asset: FixedAsset) => {
+        setAssetToEdit(asset);
+        setEditFormData({
+            registrationNo: asset.registrationNo,
+            name: asset.name,
+            assetClass: asset.assetClass,
+            assetSubClass: asset.assetSubClass,
+            brandModel: asset.brandModel,
+            costValue: asset.costValue,
+            acquisitionDate: asset.acquisitionDate?.split('T')[0] || '',
+            invoiceNo: asset.invoiceNo,
+            supplierName: asset.supplierName,
+            usefulLife: asset.usefulLife,
+            depreciationRate: asset.depreciationRate,
+            salvageValue: asset.salvageValue,
+            depreciationStartDate: asset.depreciationStartDate?.split('T')[0] || '',
+            responsiblePerson: asset.responsiblePerson,
+            warrantyEndDate: asset.warrantyEndDate?.split('T')[0] || '',
+            revaluationApplied: asset.revaluationApplied,
+            description: asset.description,
+            status: asset.status,
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value, type } = e.target;
+        setEditFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked :
+                type === 'number' ? (value ? parseFloat(value) : undefined) : value
+        }));
+    };
+
+    const saveEdit = async () => {
+        if (assetToEdit) {
+            const result = await updateAsset(assetToEdit.id, editFormData);
+            if (result.success) {
+                toast.success('Varlık başarıyla güncellendi!');
+                refetch();
+            } else {
+                toast.error(result.error || 'Bir hata oluştu');
+            }
+            setIsEditModalOpen(false);
+            setAssetToEdit(null);
         }
     };
 
@@ -211,44 +164,59 @@ export default function AssetListPage() {
             style: 'currency',
             currency: 'TRY',
             minimumFractionDigits: 2,
-        }).format(value);
+        }).format(value || 0);
     };
 
-    const getStatusBadge = (status: AssetStatus) => {
-        const config = STATUS_LABELS[status];
-        const colorClasses = {
-            green: "bg-green-100 text-green-800",
-            yellow: "bg-yellow-100 text-yellow-800",
-            red: "bg-red-100 text-red-800",
-            gray: "bg-gray-100 text-gray-800",
-        };
+    const getStatusBadge = (status: string) => {
+        const colors = getStatusColor(status);
         return (
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClasses[config.color as keyof typeof colorClasses]}`}>
-                {config.label}
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}>
+                {status}
             </span>
         );
     };
 
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="p-6 flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                    <p className="text-gray-600">Sabit varlıklar yükleniyor...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (isError) {
+        return (
+            <div className="p-6 flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4 text-center">
+                    <AlertCircle className="w-12 h-12 text-red-500" />
+                    <p className="text-lg font-medium text-gray-900">Veri yüklenirken hata oluştu</p>
+                    <p className="text-gray-600">Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.</p>
+                    <button
+                        onClick={() => refetch()}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Tekrar Dene
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="p-6">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
-                        <TrendingDown className="text-blue-600" />
-                        Sabit Varlık Listesi
-                    </h1>
-                    <p className="text-gray-600">
-                        Sistemdeki tüm sabit varlıkları görüntüleyin ve yönetin
-                    </p>
-                </div>
-                <button
-                    onClick={() => router.push("/assets/add")}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all shadow-lg"
-                >
-                    <Plus size={20} />
-                    Yeni Varlık Ekle
-                </button>
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    Sabit Varlık Listesi
+                </h1>
+                <p className="text-gray-600">
+                    Sistemdeki tüm sabit varlıkları görüntüleyin ve yönetin
+                </p>
             </div>
 
             {/* Filters */}
@@ -264,7 +232,7 @@ export default function AssetListPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
-                            placeholder="Ara... (Sicil No, Ad, Seri No)"
+                            placeholder="Ara... (Sicil No, Ad, Marka)"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -278,8 +246,8 @@ export default function AssetListPage() {
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                         <option value="">Tüm Sınıflar</option>
-                        {mainClasses.map(mc => (
-                            <option key={mc} value={mc}>{MAIN_CLASS_NAMES[mc]}</option>
+                        {assetClasses.map(ac => (
+                            <option key={ac} value={ac}>{ac}</option>
                         ))}
                     </select>
 
@@ -290,12 +258,10 @@ export default function AssetListPage() {
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                         <option value="">Tüm Durumlar</option>
-                        {Object.entries(STATUS_LABELS).map(([key, val]) => (
-                            <option key={key} value={key}>{val.label}</option>
+                        {FIXED_ASSET_STATUS_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
-
-
                 </div>
             </div>
 
@@ -303,24 +269,24 @@ export default function AssetListPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
                     <p className="text-sm text-gray-500">Toplam Varlık</p>
-                    <p className="text-2xl font-bold text-gray-900">{MOCK_ASSETS.length}</p>
+                    <p className="text-2xl font-bold text-gray-900">{summary.totalAssets}</p>
                 </div>
                 <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
                     <p className="text-sm text-gray-500">Toplam Maliyet</p>
                     <p className="text-2xl font-bold text-blue-600">
-                        {formatCurrency(MOCK_ASSETS.reduce((sum, a) => sum + a.costValue, 0))}
+                        {formatCurrency(summary.totalCost)}
                     </p>
                 </div>
                 <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
                     <p className="text-sm text-gray-500">Birikmiş Amortisman</p>
                     <p className="text-2xl font-bold text-orange-600">
-                        {formatCurrency(MOCK_ASSETS.reduce((sum, a) => sum + a.accumulatedDepreciation, 0))}
+                        {formatCurrency(summary.totalAccumulatedDepreciation)}
                     </p>
                 </div>
                 <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
                     <p className="text-sm text-gray-500">Net Defter Değeri</p>
                     <p className="text-2xl font-bold text-green-600">
-                        {formatCurrency(MOCK_ASSETS.reduce((sum, a) => sum + a.netBookValue, 0))}
+                        {formatCurrency(summary.totalNetBookValue)}
                     </p>
                 </div>
             </div>
@@ -352,8 +318,7 @@ export default function AssetListPage() {
                                 </tr>
                             ) : (
                                 filteredAssets.map((asset, index) => {
-                                    const subClass = VUK_ASSET_CLASSES.find(c => c.id === asset.subClassId);
-                                    const IconComponent = subClass ? getMainClassIcon(subClass.mainClass) : FileText;
+                                    const IconComponent = getAssetClassIcon(asset.assetClass);
 
                                     return (
                                         <tr
@@ -363,7 +328,7 @@ export default function AssetListPage() {
                                         >
                                             <td className="px-4 py-3">
                                                 <span className="font-mono text-sm font-medium text-gray-900">
-                                                    {asset.code}
+                                                    {asset.registrationNo}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3">
@@ -371,19 +336,19 @@ export default function AssetListPage() {
                                                     <IconComponent size={18} className="text-gray-500" />
                                                     <div>
                                                         <p className="font-medium text-gray-900 text-sm">{asset.name}</p>
-                                                        {asset.serialOrPlate && (
-                                                            <p className="text-xs text-gray-500">{asset.serialOrPlate}</p>
+                                                        {asset.brandModel && (
+                                                            <p className="text-xs text-gray-500">{asset.brandModel}</p>
                                                         )}
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className="text-sm text-gray-700">{subClass?.name}</span>
+                                                <span className="text-sm text-gray-700">{asset.assetSubClass}</span>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-1 text-sm text-gray-700">
                                                     <Calendar size={14} className="text-gray-400" />
-                                                    {new Date(asset.acquisitionDate).toLocaleDateString('tr-TR')}
+                                                    {asset.acquisitionDate ? new Date(asset.acquisitionDate).toLocaleDateString('tr-TR') : '-'}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-right">
@@ -393,7 +358,7 @@ export default function AssetListPage() {
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <span className="text-sm font-medium text-gray-900">
-                                                    %{asset.depreciationRate.toFixed(2)}
+                                                    %{(asset.depreciationRate || 0).toFixed(2)}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-right">
@@ -418,12 +383,13 @@ export default function AssetListPage() {
                                                         <Eye size={18} />
                                                     </button>
                                                     <button
+                                                        onClick={() => handleEdit(asset)}
                                                         className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                                         title="Düzenle"
                                                     >
                                                         <Edit size={18} />
                                                     </button>
-                                                    {asset.status !== "scrapped" && asset.status !== "sold" && (
+                                                    {asset.status !== "Hurdaya Çekilmiş" && (
                                                         <button
                                                             onClick={() => handleScrap(asset)}
                                                             className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -457,7 +423,7 @@ export default function AssetListPage() {
                                 Bu varlığı hurdaya ayırmak istediğinize emin misiniz?
                             </p>
                             <p className="text-sm text-gray-600">
-                                <span className="font-semibold">{assetToScrap.name}</span> ({assetToScrap.code}) hurdaya ayrılacaktır.
+                                <span className="font-semibold">{assetToScrap.name}</span> ({assetToScrap.registrationNo}) hurdaya ayrılacaktır.
                             </p>
                         </div>
                         <div className="flex gap-3">
@@ -469,9 +435,109 @@ export default function AssetListPage() {
                             </button>
                             <button
                                 onClick={confirmScrap}
-                                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                                disabled={isUpdatingStatus}
+                                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
                             >
+                                {isUpdatingStatus && <Loader2 className="w-4 h-4 animate-spin" />}
                                 Hurdaya Ayır
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Edit Modal */}
+            <Modal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                title="Varlık Düzenle"
+                size="lg"
+            >
+                {assetToEdit && (
+                    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Sicil No</label>
+                                <input type="text" name="registrationNo" value={editFormData.registrationNo || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Varlık Adı</label>
+                                <input type="text" name="name" value={editFormData.name || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Varlık Sınıfı</label>
+                                <input type="text" name="assetClass" value={editFormData.assetClass || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Alt Sınıf</label>
+                                <input type="text" name="assetSubClass" value={editFormData.assetSubClass || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Marka/Model</label>
+                                <input type="text" name="brandModel" value={editFormData.brandModel || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Maliyet Değeri</label>
+                                <input type="number" name="costValue" value={editFormData.costValue || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Edinme Tarihi</label>
+                                <input type="date" name="acquisitionDate" value={editFormData.acquisitionDate || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Fatura No</label>
+                                <input type="text" name="invoiceNo" value={editFormData.invoiceNo || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Tedarikçi Adı</label>
+                                <input type="text" name="supplierName" value={editFormData.supplierName || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Faydalı Ömür (Yıl)</label>
+                                <input type="number" name="usefulLife" value={editFormData.usefulLife || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Amortisman Oranı (%)</label>
+                                <input type="number" step="0.01" name="depreciationRate" value={editFormData.depreciationRate || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Hurda Değeri</label>
+                                <input type="number" name="salvageValue" value={editFormData.salvageValue || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Amortisman Başlangıç</label>
+                                <input type="date" name="depreciationStartDate" value={editFormData.depreciationStartDate || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Sorumlu Kişi</label>
+                                <input type="text" name="responsiblePerson" value={editFormData.responsiblePerson || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Garanti Bitiş</label>
+                                <input type="date" name="warrantyEndDate" value={editFormData.warrantyEndDate || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+                                <select name="status" value={editFormData.status || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    {FIXED_ASSET_STATUS_OPTIONS.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+                            <textarea name="description" value={editFormData.description || ''} onChange={handleEditFormChange} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input type="checkbox" name="revaluationApplied" checked={editFormData.revaluationApplied || false} onChange={handleEditFormChange} className="w-4 h-4 text-blue-600 rounded border-gray-300" />
+                            <label className="text-sm font-medium text-gray-700">Yeniden Değerleme Uygulandı</label>
+                        </div>
+                        <div className="flex gap-3 pt-4 border-t">
+                            <button onClick={() => setIsEditModalOpen(false)} className="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold">İptal</button>
+                            <button onClick={saveEdit} disabled={isUpdatingAsset} className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+                                {isUpdatingAsset && <Loader2 className="w-4 h-4 animate-spin" />}
+                                Kaydet
                             </button>
                         </div>
                     </div>

@@ -29,7 +29,7 @@ export const API_ENDPOINTS = {
 
   groups: {
     // CREATE - Yeni grup oluştur
-    addNewGroup: `${API_BASE_URL}/groups/add-new-group`,
+    addNewGroup: `${API_BASE_URL}/groups/`,
 
     // READ - Tüm grupları getir
     getAllGroups: `${API_BASE_URL}/groups`,
@@ -128,5 +128,23 @@ export const API_ENDPOINTS = {
 
     // READ - Bağışçının bağışlarını getir (GET /donors/:id/donations)
     getDonorDonations: (id: number) => `${API_BASE_URL}/donors/${id}/donations`,
+  },
+
+  // 🏢 SABİT VARLIK YÖNETİMİ (Fixed Assets)
+  fixedAssets: {
+    // CREATE - Yeni sabit varlık oluştur (POST /fixed-assets)
+    create: `${API_BASE_URL}/fixed-assets`,
+
+    // READ - Tüm sabit varlıkları getir (GET /fixed-assets)
+    getAll: `${API_BASE_URL}/fixed-assets`,
+
+    // READ - ID'ye göre sabit varlık getir (GET /fixed-assets/:id)
+    getById: (id: number) => `${API_BASE_URL}/fixed-assets/${id}`,
+
+    // PUT - Sabit varlık güncelle (PUT /fixed-assets/:id)
+    update: (id: number) => `${API_BASE_URL}/fixed-assets/${id}`,
+
+    // PATCH - Sabit varlık durumu güncelle (PATCH /fixed-assets/:id/status)
+    updateStatus: (id: number) => `${API_BASE_URL}/fixed-assets/${id}/status`,
   },
 };

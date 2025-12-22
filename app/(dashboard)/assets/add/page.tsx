@@ -15,6 +15,7 @@ import {
     TrendingDown,
     MapPin,
     FileText,
+    Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -25,6 +26,7 @@ import {
     AssetMainClass,
     CreateAssetPayload,
 } from "@/lib/types/asset.types";
+import useCreateFixedAsset from "@/hooks/useCreateFixedAsset";
 
 interface FormData {
     // Tanımlayıcı Bilgiler
@@ -65,6 +67,8 @@ interface FormErrors {
 
 export default function AddAssetPage() {
     const router = useRouter();
+    const { createFixedAsset, isLoading: isSubmitting } = useCreateFixedAsset();
+
     const [formData, setFormData] = useState<FormData>({
         code: "",
         name: "",
@@ -90,7 +94,6 @@ export default function AddAssetPage() {
     });
 
     const [errors, setErrors] = useState<FormErrors>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
     // Get unique main classes
@@ -236,44 +239,40 @@ export default function AddAssetPage() {
             return;
         }
 
-        setIsSubmitting(true);
+        // Alt sınıf bilgisini bul
+        const selectedSubClass = VUK_ASSET_CLASSES.find(c => c.id === formData.subClassId);
+        const mainClassName = formData.mainClass ? MAIN_CLASS_NAMES[formData.mainClass] : '';
 
-        try {
-            // Prepare payload
-            const payload: CreateAssetPayload = {
-                code: formData.code,
-                name: formData.name,
-                subClassId: formData.subClassId,
-                serialOrPlate: formData.serialOrPlate || undefined,
-                brandModel: formData.brandModel || undefined,
-                costValue: parseFloat(formData.costValue),
-                currency: formData.currency,
-                acquisitionDate: formData.acquisitionDate,
-                invoiceNo: formData.invoiceNo || undefined,
-                supplier: formData.supplier || undefined,
-                salvageValue: formData.salvageValue
-                    ? parseFloat(formData.salvageValue)
-                    : undefined,
-                depreciationStartDate: formData.depreciationStartDate,
-                location: formData.location,
-                responsiblePerson: formData.responsiblePerson || undefined,
-                warrantyEndDate: formData.warrantyEndDate || undefined,
-                revaluationApplied: formData.revaluationApplied,
-                notes: formData.notes || undefined,
-            };
+        // API için payload hazırla
+        const apiPayload = {
+            registrationNo: formData.code,
+            name: formData.name,
+            assetClass: mainClassName,
+            assetSubClass: selectedSubClass?.name || '',
+            brandModel: formData.brandModel || '',
+            costValue: parseFloat(formData.costValue),
+            acquisitionDate: formData.acquisitionDate,
+            invoiceNo: formData.invoiceNo || '',
+            supplierName: formData.supplier || '',
+            usefulLife: formData.usefulLife,
+            depreciationRate: formData.depreciationRate,
+            salvageValue: formData.salvageValue ? parseFloat(formData.salvageValue) : 0,
+            depreciationStartDate: formData.depreciationStartDate,
+            responsiblePerson: formData.responsiblePerson || '',
+            warrantyEndDate: formData.warrantyEndDate || '',
+            revaluationApplied: formData.revaluationApplied,
+            description: formData.notes || '',
+        };
 
-            console.log("Asset payload:", payload);
+        console.log("API payload:", apiPayload);
 
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+        const result = await createFixedAsset(apiPayload);
 
+        if (result.success) {
             toast.success("Varlık başarıyla oluşturuldu!");
             router.push("/assets/list");
-        } catch (error) {
-            console.error("Create asset error:", error);
-            toast.error("Varlık oluşturulurken bir hata oluştu");
-        } finally {
-            setIsSubmitting(false);
+        } else {
+            toast.error(result.error || "Varlık oluşturulurken bir hata oluştu");
         }
     };
 
