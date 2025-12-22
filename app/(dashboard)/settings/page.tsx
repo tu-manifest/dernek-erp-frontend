@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import {
     Building2,
     Save,
@@ -13,12 +12,12 @@ import {
     User,
     Hash,
     Settings,
-    Loader2
+    Loader2,
+    AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
-
-// Backend API URL'iniz (Portu kendi ayarına göre kontrol et)
-const API_URL = "http://localhost:8080/api/settings";
+import fetcher from "@/lib/api/fetcher";
+import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 // Interface artık tamamen Backend modelindeki isimlerle aynı
 interface AssociationSettings {
@@ -48,27 +47,33 @@ export default function SettingsPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [hasChanges, setHasChanges] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    // 1. Backend'den Ayarları Çekme (GET)
+    // Backend'den Ayarları Çekme (GET)
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const response = await axios.get(API_URL);
-                // İsimler artık aynı olduğu için doğrudan state'e atabiliyoruz
-                if (response.data) {
+                setError(null);
+                const response = await fetcher(API_ENDPOINTS.settings.get);
+
+                // Response'dan ayarları al
+                if (response) {
+                    // Backend'den gelen veriyi kontrol et
+                    const data = response.data || response;
                     setSettings({
-                        associationName: response.data.associationName || "",
-                        presidentName: response.data.presidentName || "",
-                        phoneNumber: response.data.phoneNumber || "",
-                        email: response.data.email || "",
-                        address: response.data.address || "",
-                        taxNumber: response.data.taxNumber || "",
-                        foundationYear: response.data.foundationYear || "",
-                        website: response.data.website || "",
+                        associationName: data.associationName || "",
+                        presidentName: data.presidentName || "",
+                        phoneNumber: data.phoneNumber || "",
+                        email: data.email || "",
+                        address: data.address || "",
+                        taxNumber: data.taxNumber || "",
+                        foundationYear: data.foundationYear || "",
+                        website: data.website || "",
                     });
                 }
-            } catch (error) {
-                console.error("Fetch error:", error);
+            } catch (err: any) {
+                console.error("Fetch error:", err);
+                setError(err.message || "Ayarlar sunucudan yüklenemedi.");
                 toast.error("Ayarlar sunucudan yüklenemedi.");
             } finally {
                 setIsLoading(false);
@@ -86,18 +91,20 @@ export default function SettingsPage() {
         setHasChanges(true);
     };
 
-    // 2. Ayarları Güncelleme (PUT)
+    // Ayarları Güncelleme (PUT)
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // İsimler aynı olduğu için doğrudan 'settings' objesini gönderiyoruz
-            await axios.put(API_URL, settings);
-            
+            await fetcher(API_ENDPOINTS.settings.update, {
+                method: "PUT",
+                payload: settings,
+            });
+
             toast.success("Ayarlar başarıyla güncellendi!");
             setHasChanges(false);
-        } catch (error) {
-            console.error("Update error:", error);
-            toast.error("Ayarlar kaydedilirken bir hata oluştu.");
+        } catch (err: any) {
+            console.error("Update error:", err);
+            toast.error(err.message || "Ayarlar kaydedilirken bir hata oluştu.");
         } finally {
             setIsSaving(false);
         }
@@ -108,6 +115,28 @@ export default function SettingsPage() {
             <div className="flex flex-col items-center justify-center h-screen gap-4">
                 <Loader2 className="animate-spin text-blue-600" size={48} />
                 <p className="text-gray-500 font-medium">Ayarlar yükleniyor...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-6">
+                <div className="max-w-5xl mx-auto">
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-center gap-4">
+                        <AlertCircle className="text-red-600 flex-shrink-0" size={32} />
+                        <div>
+                            <h3 className="text-lg font-semibold text-red-800">Bağlantı Hatası</h3>
+                            <p className="text-red-600">{error}</p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                            >
+                                Yeniden Dene
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -125,7 +154,7 @@ export default function SettingsPage() {
                 </p>
             </div>
 
-            <div className="max-w-5xl">
+            <div className="max-w-5xl mx-auto">
                 <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     {/* Kart Başlığı */}
                     <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
@@ -149,7 +178,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={settings.associationName}
                                 onChange={(e) => handleChange("associationName", e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 placeholder="Dernek tam adı"
                             />
                         </div>
@@ -164,7 +193,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={settings.presidentName}
                                 onChange={(e) => handleChange("presidentName", e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 placeholder="Başkan Ad Soyad"
                             />
                         </div>
@@ -179,7 +208,7 @@ export default function SettingsPage() {
                                 type="tel"
                                 value={settings.phoneNumber}
                                 onChange={(e) => handleChange("phoneNumber", e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 placeholder="+90 ..."
                             />
                         </div>
@@ -194,7 +223,7 @@ export default function SettingsPage() {
                                 type="email"
                                 value={settings.email}
                                 onChange={(e) => handleChange("email", e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 placeholder="info@dernek.org"
                             />
                         </div>
@@ -209,7 +238,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={settings.taxNumber}
                                 onChange={(e) => handleChange("taxNumber", e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             />
                         </div>
 
@@ -223,7 +252,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={settings.foundationYear}
                                 onChange={(e) => handleChange("foundationYear", e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 placeholder="2024"
                                 maxLength={4}
                             />
@@ -238,7 +267,7 @@ export default function SettingsPage() {
                             <textarea
                                 value={settings.address}
                                 onChange={(e) => handleChange("address", e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all resize-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                                 rows={3}
                             />
                         </div>
@@ -253,7 +282,7 @@ export default function SettingsPage() {
                                 type="url"
                                 value={settings.website}
                                 onChange={(e) => handleChange("website", e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                 placeholder="https://..."
                             />
                         </div>

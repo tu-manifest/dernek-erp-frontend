@@ -224,4 +224,19 @@ export const API_ENDPOINTS = {
     // GET - İstatistik verileri
     getStats: `${API_BASE_URL}/activity-logs/stats`,
   },
+
+  // ⚙️ DERNEK AYARLARI (Settings)
+  settings: {
+    // GET - Ayarları getir
+    get: `${API_BASE_URL}/settings`,
+
+    // PUT - Ayarları güncelle
+    update: `${API_BASE_URL}/settings`,
+  },
+
+  // 📊 DASHBOARD (Dashboard)
+  dashboard: {
+    // GET - Dashboard istatistikleri
+    stats: `${API_BASE_URL}/dashboard/stats`,
+  },
 };

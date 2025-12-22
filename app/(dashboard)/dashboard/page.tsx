@@ -4,6 +4,7 @@ import React from 'react';
 import { Users, Calendar, FileText, DollarSign, BarChart3, AlertTriangle, Clock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import useGetRecentActivityLogs from '@/hooks/useGetRecentActivityLogs';
+import useGetDashboardStats from '@/hooks/useGetDashboardStats';
 import { useRouter } from 'next/navigation';
 
 // Aktivite tipine göre renk belirleme
@@ -79,10 +80,21 @@ const formatTimeAgo = (dateString: string): string => {
   return date.toLocaleDateString('tr-TR');
 };
 
+// Para formatı
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
 export default function DashboardPage() {
   const { isDemo } = useAuth();
   const router = useRouter();
-  const { activityLogs, isLoading, isError } = useGetRecentActivityLogs(10);
+  const { activityLogs, isLoading: isLogsLoading, isError: isLogsError } = useGetRecentActivityLogs(10);
+  const { stats, isLoading: isStatsLoading, isError: isStatsError } = useGetDashboardStats();
 
   return (
     <div className="p-6">
@@ -105,53 +117,94 @@ export default function DashboardPage() {
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Dernek Yönetim Sistemi</h1>
-        <p className="text-gray-600">Hoş geldiniz! Sisteminizin genel durumu aşağıda özetlenmiştir.</p>
+        <p className="text-gray-600">
+          Hoş geldiniz! Sisteminizin genel durumu aşağıda özetlenmiştir.
+          {stats?.period && (
+            <span className="ml-2 text-sm text-blue-600 font-medium">
+              ({stats.period.month} {stats.period.year})
+            </span>
+          )}
+        </p>
       </div>
 
       {/* İstatistik Kartları */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Toplam Üye */}
         <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Toplam Üye</p>
-              <p className="text-2xl font-bold text-gray-900">1</p>
+              {isStatsLoading ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                </div>
+              ) : isStatsError ? (
+                <p className="text-lg font-bold text-red-500">Hata</p>
+              ) : (
+                <p className="text-2xl font-bold text-gray-900">{stats?.totalMembers ?? 0}</p>
+              )}
             </div>
             <Users className="h-8 w-8 text-blue-500" />
           </div>
-
         </div>
 
+        {/* Aktif Etkinlik */}
         <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Aktif Etkinlik</p>
-              <p className="text-2xl font-bold text-gray-900">1</p>
+              {isStatsLoading ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <Loader2 className="h-5 w-5 text-green-500 animate-spin" />
+                </div>
+              ) : isStatsError ? (
+                <p className="text-lg font-bold text-red-500">Hata</p>
+              ) : (
+                <p className="text-2xl font-bold text-gray-900">{stats?.activeEvents ?? 0}</p>
+              )}
             </div>
             <Calendar className="h-8 w-8 text-green-500" />
           </div>
-
         </div>
 
+        {/* Toplam Döküman */}
         <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Toplam Yönetici</p>
-              <p className="text-2xl font-bold text-gray-900">2</p>
+              <p className="text-sm font-medium text-gray-600">Toplam Döküman</p>
+              {isStatsLoading ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <Loader2 className="h-5 w-5 text-yellow-500 animate-spin" />
+                </div>
+              ) : isStatsError ? (
+                <p className="text-lg font-bold text-red-500">Hata</p>
+              ) : (
+                <p className="text-2xl font-bold text-gray-900">{stats?.totalDocuments ?? 0}</p>
+              )}
             </div>
             <FileText className="h-8 w-8 text-yellow-500" />
           </div>
-
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+        {/* Aylık Gelir */}
+        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Aylık Gelir</p>
-              <p className="text-2xl font-bold text-gray-900">₺-500</p>
+              {isStatsLoading ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <Loader2 className="h-5 w-5 text-purple-500 animate-spin" />
+                </div>
+              ) : isStatsError ? (
+                <p className="text-lg font-bold text-red-500">Hata</p>
+              ) : (
+                <p className={`text-2xl font-bold ${(stats?.monthlyIncome ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(stats?.monthlyIncome ?? 0)}
+                </p>
+              )}
             </div>
-            <DollarSign className="h-8 w-8 text-red-500" />
+            <DollarSign className="h-8 w-8 text-purple-500" />
           </div>
-
         </div>
       </div>
 
@@ -170,12 +223,12 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {isLoading ? (
+          {isLogsLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
               <span className="ml-2 text-gray-600">Yükleniyor...</span>
             </div>
-          ) : isError ? (
+          ) : isLogsError ? (
             <div className="text-center py-8">
               <p className="text-red-500">Aktiviteler yüklenirken hata oluştu</p>
             </div>
@@ -234,9 +287,9 @@ export default function DashboardPage() {
             </button>
             <button
               onClick={() => router.push('/finance/reports')}
-              className="p-4 bg-red-50 hover:bg-red-100 rounded-lg transition-colors duration-200 text-left"
+              className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200 text-left"
             >
-              <BarChart3 className="h-6 w-6 text-red-600 mb-2" />
+              <BarChart3 className="h-6 w-6 text-purple-600 mb-2" />
               <p className="text-sm font-medium text-gray-900">Raporları Görüntüle</p>
             </button>
           </div>
@@ -245,4 +298,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
