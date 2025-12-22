@@ -3,7 +3,7 @@ import fetcher from '../lib/api/fetcher';
 import { API_ENDPOINTS } from '../lib/api/endpoints';
 
 export default function useGetGroups() {
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     API_ENDPOINTS.groups.getAllGroups,
     fetcher,
     {
@@ -31,5 +31,6 @@ export default function useGetGroups() {
     groups,
     isLoading,
     isError: error,
+    refetch: mutate,
   };
 }
