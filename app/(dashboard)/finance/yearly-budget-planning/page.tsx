@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import useGetBudget, { BudgetItem } from "../../../../hooks/useGetBudget";
 import useGetBudgetYears from "../../../../hooks/useGetBudgetYears";
-import useCreateBudget from "../../../../hooks/useCreateBudget";
+import useDeleteBudget from "../../../../hooks/useDeleteBudget";
 import useSaveBudget from "../../../../hooks/useSaveBudget";
 import useDeleteBudgetItem from "../../../../hooks/useDeleteBudgetItem";
+import Modal from "../../../../components/Modal";
 
 interface LocalBudgetItem {
   id: string;
@@ -121,47 +122,51 @@ export default function BudgetPlanningPage() {
   // API Hooks
   const { gelirItems: apiGelirItems, giderItems: apiGiderItems, isLoading: budgetLoading, refetch: refetchBudget } = useGetBudget(selectedYear);
   const { years: availableYears, isLoading: yearsLoading, refetch: refetchYears } = useGetBudgetYears();
-  const { createBudget, isLoading: createLoading } = useCreateBudget();
+  const { deleteBudget, isLoading: deleteLoading } = useDeleteBudget();
   const { saveBudget, isLoading: saveLoading } = useSaveBudget();
   const { deleteBudgetItem, isLoading: deleteItemLoading } = useDeleteBudgetItem();
 
   // API'den gelen verileri local state'e yükle
+  // JSON karşılaştırması ile gereksiz güncellemeleri önle
   useEffect(() => {
-    if (apiGelirItems && apiGelirItems.length > 0) {
-      const mappedItems: LocalBudgetItem[] = apiGelirItems.map((item: BudgetItem) => ({
-        id: item.id.toString(),
-        type: 'gelir' as const,
-        category: item.category,
-        item: item.item,
-        amount: item.amount,
-        apiId: item.id,
-      }));
-      setGelirItems(mappedItems);
-    } else {
-      setGelirItems([]);
-    }
+    const mappedItems: LocalBudgetItem[] = apiGelirItems.map((item: BudgetItem) => ({
+      id: item.id.toString(),
+      type: 'gelir' as const,
+      category: item.category,
+      item: item.item,
+      amount: item.amount,
+      apiId: item.id,
+    }));
+
+    // Sadece gerçekten değişiklik varsa güncelle
+    setGelirItems(prev => {
+      const prevJson = JSON.stringify(prev.map(p => ({ apiId: p.apiId, category: p.category, item: p.item, amount: p.amount })));
+      const newJson = JSON.stringify(mappedItems.map(n => ({ apiId: n.apiId, category: n.category, item: n.item, amount: n.amount })));
+      return prevJson === newJson ? prev : mappedItems;
+    });
   }, [apiGelirItems]);
 
   useEffect(() => {
-    if (apiGiderItems && apiGiderItems.length > 0) {
-      const mappedItems: LocalBudgetItem[] = apiGiderItems.map((item: BudgetItem) => ({
-        id: item.id.toString(),
-        type: 'gider' as const,
-        category: item.category,
-        item: item.item,
-        amount: item.amount,
-        apiId: item.id,
-      }));
-      setGiderItems(mappedItems);
-    } else {
-      setGiderItems([]);
-    }
+    const mappedItems: LocalBudgetItem[] = apiGiderItems.map((item: BudgetItem) => ({
+      id: item.id.toString(),
+      type: 'gider' as const,
+      category: item.category,
+      item: item.item,
+      amount: item.amount,
+      apiId: item.id,
+    }));
+
+    // Sadece gerçekten değişiklik varsa güncelle
+    setGiderItems(prev => {
+      const prevJson = JSON.stringify(prev.map(p => ({ apiId: p.apiId, category: p.category, item: p.item, amount: p.amount })));
+      const newJson = JSON.stringify(mappedItems.map(n => ({ apiId: n.apiId, category: n.category, item: n.item, amount: n.amount })));
+      return prevJson === newJson ? prev : mappedItems;
+    });
   }, [apiGiderItems]);
 
-  // Yıl değiştiğinde verileri yeniden yükle
-  useEffect(() => {
-    refetchBudget();
-  }, [selectedYear]);
+  // NOT: SWR, selectedYear değiştiğinde otomatik olarak yeni veriyi çeker
+  // çünkü API_ENDPOINTS.budget.getByYear(year) URL'i year'a bağlıdır.
+  // Bu nedenle manuel refetch'e gerek yoktur.
 
   const currentKalemler =
     selectedType === "gelir" ? gelirKalemleri : giderKalemleri;
@@ -302,7 +307,8 @@ export default function BudgetPlanningPage() {
   };
 
   const confirmNewPlan = async () => {
-    const result = await createBudget({ year: selectedYear });
+    // Sadece mevcut yılın bütçesini sil, yeni plan oluşturma
+    const result = await deleteBudget(selectedYear);
 
     if (result.success) {
       setGelirItems([]);
@@ -314,7 +320,7 @@ export default function BudgetPlanningPage() {
       refetchBudget();
       refetchYears();
     } else {
-      alert(`Yeni plan oluşturulurken hata: ${result.error}`);
+      alert(`Plan silinirken hata: ${result.error}`);
     }
   };
 
@@ -363,7 +369,7 @@ export default function BudgetPlanningPage() {
         <div className="flex gap-3">
           <button
             onClick={handleNewPlan}
-            disabled={createLoading}
+            disabled={deleteLoading}
             className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition flex items-center gap-2 disabled:opacity-50"
           >
             <svg
@@ -472,8 +478,8 @@ export default function BudgetPlanningPage() {
                     setSelectedItem("");
                   }}
                   className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${selectedType === "gelir"
-                      ? "bg-green-600 text-white shadow-md"
-                      : "text-gray-600 hover:text-green-600"
+                    ? "bg-green-600 text-white shadow-md"
+                    : "text-gray-600 hover:text-green-600"
                     }`}
                 >
                   <div className="flex items-center gap-2">
@@ -499,8 +505,8 @@ export default function BudgetPlanningPage() {
                     setSelectedItem("");
                   }}
                   className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${selectedType === "gider"
-                      ? "bg-red-600 text-white shadow-md"
-                      : "text-gray-600 hover:text-red-600"
+                    ? "bg-red-600 text-white shadow-md"
+                    : "text-gray-600 hover:text-red-600"
                     }`}
                 >
                   <div className="flex items-center gap-2">
@@ -801,66 +807,66 @@ export default function BudgetPlanningPage() {
       )}
 
       {/* Yeni Plan Onay Modalı */}
-      {showNewPlanModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-yellow-100 rounded-full">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-yellow-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold">Eski Planı Silmek İstiyor Musunuz?</h3>
-            </div>
-            <p className="text-gray-600 mb-6">
-              <strong>{selectedYear}</strong> yılına ait mevcut bütçe planı silinecek ve yeni bir plan oluşturulacaktır.
-              Bu işlem geri alınamaz.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowNewPlanModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-              >
-                İptal
-              </button>
-              <button
-                onClick={confirmNewPlan}
-                disabled={createLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50"
-              >
-                {createLoading ? (
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-                Evet, Sil ve Yeni Plan Oluştur
-              </button>
-            </div>
+      <Modal
+        isOpen={showNewPlanModal}
+        onClose={() => setShowNewPlanModal(false)}
+        title="Eski Planı Silmek İstiyor Musunuz?"
+        size="md"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-yellow-100 rounded-full">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-yellow-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
           </div>
+          <p className="text-gray-700">
+            <strong>{selectedYear}</strong> yılına ait mevcut bütçe planı silinecek ve yeni bir plan oluşturulacaktır.
+            Bu işlem geri alınamaz.
+          </p>
         </div>
-      )}
+        <div className="flex gap-3 justify-end mt-6">
+          <button
+            onClick={() => setShowNewPlanModal(false)}
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+          >
+            İptal
+          </button>
+          <button
+            onClick={confirmNewPlan}
+            disabled={deleteLoading}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50"
+          >
+            {deleteLoading ? (
+              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            )}
+            Evet, Sil ve Yeni Plan Oluştur
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
