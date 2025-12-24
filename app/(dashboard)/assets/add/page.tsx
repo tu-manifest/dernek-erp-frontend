@@ -23,7 +23,6 @@ import { toast } from "sonner";
 import {
     VUK_ASSET_CLASSES,
     MAIN_CLASS_NAMES,
-    LOCATIONS,
     CURRENCIES,
     AssetMainClass,
     CreateAssetPayload,
@@ -55,7 +54,6 @@ interface FormData {
     depreciationStartDate: string;
 
     // Operasyonel Bilgiler
-    location: string;
     responsiblePerson: string;
     warrantyEndDate: string;
 
@@ -89,7 +87,6 @@ export default function AddAssetPage() {
         depreciationMethod: "Normal Amortisman",
         salvageValue: "",
         depreciationStartDate: "",
-        location: "",
         responsiblePerson: "",
         warrantyEndDate: "",
         revaluationApplied: false,
@@ -226,9 +223,6 @@ export default function AddAssetPage() {
         if (!formData.acquisitionDate) {
             newErrors.acquisitionDate = "Edinme tarihi zorunludur";
         }
-        if (!formData.location) {
-            newErrors.location = "Lokasyon seçilmelidir";
-        }
         if (!formData.depreciationStartDate) {
             newErrors.depreciationStartDate = "Amortisman başlangıç tarihi zorunludur";
         }
@@ -247,7 +241,6 @@ export default function AddAssetPage() {
             formData.costValue &&
             parseFloat(formData.costValue) > 0 &&
             formData.acquisitionDate &&
-            formData.location &&
             formData.depreciationStartDate
         );
     }, [formData]);
@@ -713,8 +706,6 @@ export default function AddAssetPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-
                         {/* Sorumlu Kişi */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">

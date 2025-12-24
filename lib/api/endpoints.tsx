@@ -144,6 +144,9 @@ export const API_ENDPOINTS = {
     // PUT - Sabit varlık güncelle (PUT /fixed-assets/:id)
     update: (id: number) => `${API_BASE_URL}/fixed-assets/${id}`,
 
+    // DELETE - Sabit varlık sil (DELETE /fixed-assets/:id)
+    delete: (id: number) => `${API_BASE_URL}/fixed-assets/${id}`,
+
     // PATCH - Sabit varlık durumu güncelle (PATCH /fixed-assets/:id/status)
     updateStatus: (id: number) => `${API_BASE_URL}/fixed-assets/${id}/status`,
 
