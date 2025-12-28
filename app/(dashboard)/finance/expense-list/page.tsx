@@ -10,7 +10,6 @@ import {
     Edit3,
     Trash2,
     TrendingDown,
-    DollarSign,
     CreditCard,
     Receipt,
     Users,
@@ -22,11 +21,17 @@ import {
     ChevronLeft,
     ChevronRight,
     X,
+    FileText,
+    Loader2,
 } from "lucide-react";
 import Modal from "../../../../components/Modal";
+import { toast } from "sonner";
+import useGetAllExpenses, { Expense } from "../../../../hooks/useGetAllExpenses";
+import useDeleteExpense from "../../../../hooks/useDeleteExpense";
+import { API_ENDPOINTS } from "../../../../lib/api/endpoints";
 
 // Gider kategorileri
-const EXPENSE_CATEGORIES = {
+const EXPENSE_CATEGORIES: Record<string, { icon: React.ElementType; color: string; bgColor: string; textColor: string }> = {
     "Personel Giderleri": {
         icon: Users,
         color: "blue",
@@ -63,113 +68,21 @@ const EXPENSE_CATEGORIES = {
         bgColor: "bg-gray-100",
         textColor: "text-gray-700",
     },
+    // Genel Giderler kategorisi backend'den gelen veriler için
+    "Genel Giderler": {
+        icon: Receipt,
+        color: "indigo",
+        bgColor: "bg-indigo-100",
+        textColor: "text-indigo-700",
+    },
 };
-
-// Demo veri
-const DEMO_EXPENSES = [
-    {
-        id: 1,
-        date: "2024-12-20",
-        category: "Personel Giderleri",
-        subcategory: "Maaş ve Ücretler",
-        vendor: "Personel Ödemeleri",
-        amount: 45000.0,
-        paymentMethod: "Banka Transferi",
-        invoiceNumber: "FT-2024-001",
-        description: "Aralık ayı maaş ödemeleri",
-        status: "paid",
-    },
-    {
-        id: 2,
-        date: "2024-12-18",
-        category: "İdari ve Genel Giderler",
-        subcategory: "Kira Gideri (Merkez/Şube)",
-        vendor: "ABC Gayrimenkul",
-        amount: 12500.0,
-        paymentMethod: "Havale/EFT",
-        invoiceNumber: "FT-2024-002",
-        description: "Aralık ayı merkez ofis kirası",
-        status: "paid",
-    },
-    {
-        id: 3,
-        date: "2024-12-15",
-        category: "Esas Amaç Giderleri",
-        subcategory: "Burs ve Sosyal Yardım Ödemeleri",
-        vendor: "Öğrenci Bursları",
-        amount: 25000.0,
-        paymentMethod: "Banka Transferi",
-        invoiceNumber: "FT-2024-003",
-        description: "15 öğrenciye burs ödemesi",
-        status: "paid",
-    },
-    {
-        id: 4,
-        date: "2024-12-12",
-        category: "İdari ve Genel Giderler",
-        subcategory: "Haberleşme Giderleri",
-        vendor: "Turkcell",
-        amount: 2350.0,
-        paymentMethod: "Kredi Kartı",
-        invoiceNumber: "FT-2024-004",
-        description: "Telefon ve internet faturaları",
-        status: "paid",
-    },
-    {
-        id: 5,
-        date: "2024-12-10",
-        category: "Fon Toplama Giderleri",
-        subcategory: "Etkinlik Organizasyon Giderleri",
-        vendor: "Etkinlik Hizmetleri A.Ş.",
-        amount: 8500.0,
-        paymentMethod: "Nakit",
-        invoiceNumber: "FT-2024-005",
-        description: "Yılbaşı etkinliği organizasyonu",
-        status: "pending",
-    },
-    {
-        id: 6,
-        date: "2024-12-08",
-        category: "Mali ve Duran Varlık Giderleri",
-        subcategory: "Demirbaş Alımları (Gider Yazılan)",
-        vendor: "Ofis Mobilya Ltd.",
-        amount: 15750.0,
-        paymentMethod: "Çek",
-        invoiceNumber: "FT-2024-006",
-        description: "Yeni ofis mobilyaları",
-        status: "pending",
-    },
-    {
-        id: 7,
-        date: "2024-12-05",
-        category: "Personel Giderleri",
-        subcategory: "Sosyal Güvenlik İşveren Payı",
-        vendor: "SGK",
-        amount: 8900.0,
-        paymentMethod: "Banka Transferi",
-        invoiceNumber: "FT-2024-007",
-        description: "Kasım ayı SGK ödemeleri",
-        status: "paid",
-    },
-    {
-        id: 8,
-        date: "2024-12-01",
-        category: "İdari ve Genel Giderler",
-        subcategory: "Isıtma, Aydınlatma, Su Giderleri",
-        vendor: "BEDAŞ",
-        amount: 3200.0,
-        paymentMethod: "Otomatik Ödeme",
-        invoiceNumber: "FT-2024-008",
-        description: "Kasım ayı elektrik faturası",
-        status: "paid",
-    },
-];
 
 // Ödeme yöntemleri
 const PAYMENT_METHODS = [
     "Tümü",
     "Nakit",
     "Banka Transferi",
+    "Banka transferi",
     "Kredi Kartı",
     "Çek",
     "Senet",
@@ -177,10 +90,12 @@ const PAYMENT_METHODS = [
 ];
 
 export default function ExpenseListPage() {
+    const { expenses, summary, isLoading, isError, refetch } = useGetAllExpenses();
+    const { deleteExpense, isLoading: isDeleting } = useDeleteExpense();
+
     const [searchTerm, setSearchTerm] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("Tümü");
     const [paymentMethodFilter, setPaymentMethodFilter] = useState("Tümü");
-    const [statusFilter, setStatusFilter] = useState("Tümü");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -189,49 +104,49 @@ export default function ExpenseListPage() {
     // Modal states
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [selectedExpense, setSelectedExpense] = useState<(typeof DEMO_EXPENSES)[0] | null>(null);
+    const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
 
     // Filtered expenses
     const filteredExpenses = useMemo(() => {
-        return DEMO_EXPENSES.filter((expense) => {
+        return expenses.filter((expense) => {
             const matchesSearch =
-                expense.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                expense.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
+                (expense.supplierName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+                (expense.description?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+                (expense.invoiceNumber?.toLowerCase() || "").includes(searchTerm.toLowerCase());
 
             const matchesCategory =
-                categoryFilter === "Tümü" || expense.category === categoryFilter;
+                categoryFilter === "Tümü" || expense.mainCategory === categoryFilter;
 
             const matchesPayment =
                 paymentMethodFilter === "Tümü" ||
                 expense.paymentMethod === paymentMethodFilter;
 
-            const matchesStatus =
-                statusFilter === "Tümü" || expense.status === statusFilter;
-
             const matchesDateFrom =
-                !dateFrom || new Date(expense.date) >= new Date(dateFrom);
+                !dateFrom || new Date(expense.expenseDate) >= new Date(dateFrom);
             const matchesDateTo =
-                !dateTo || new Date(expense.date) <= new Date(dateTo);
+                !dateTo || new Date(expense.expenseDate) <= new Date(dateTo);
 
             return (
                 matchesSearch &&
                 matchesCategory &&
                 matchesPayment &&
-                matchesStatus &&
                 matchesDateFrom &&
                 matchesDateTo
             );
         });
-    }, [searchTerm, categoryFilter, paymentMethodFilter, statusFilter, dateFrom, dateTo]);
+    }, [expenses, searchTerm, categoryFilter, paymentMethodFilter, dateFrom, dateTo]);
 
     // Summary stats
-    const totalExpense = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalExpense = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || '0'), 0);
     const thisMonthExpense = filteredExpenses
-        .filter((e) => new Date(e.date).getMonth() === new Date().getMonth())
-        .reduce((sum, e) => sum + e.amount, 0);
-    const pendingCount = filteredExpenses.filter((e) => e.status === "pending").length;
-    const paidCount = filteredExpenses.filter((e) => e.status === "paid").length;
+        .filter((e) => {
+            const expenseDate = new Date(e.expenseDate);
+            const now = new Date();
+            return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
+        })
+        .reduce((sum, e) => sum + parseFloat(e.amount || '0'), 0);
+    const recurringCount = filteredExpenses.filter((e) => e.isRecurring).length;
+    const documentCount = filteredExpenses.filter((e) => e.hasDocument).length;
 
     // Pagination
     const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
@@ -240,25 +155,34 @@ export default function ExpenseListPage() {
         currentPage * itemsPerPage
     );
 
-    const handleViewDetails = (expense: (typeof DEMO_EXPENSES)[0]) => {
+    const handleViewDetails = (expense: Expense) => {
         setSelectedExpense(expense);
         setIsDetailModalOpen(true);
     };
 
-    const handleDelete = (expense: (typeof DEMO_EXPENSES)[0]) => {
+    const handleDelete = (expense: Expense) => {
         setSelectedExpense(expense);
         setIsDeleteModalOpen(true);
     };
 
-    const confirmDelete = () => {
-        // API call would go here
+    const confirmDelete = async () => {
+        if (!selectedExpense) return;
+
+        const result = await deleteExpense(selectedExpense.id);
+        if (result.success) {
+            toast.success("Gider başarıyla silindi!");
+            refetch();
+        } else {
+            toast.error(result.error || "Gider silinirken bir hata oluştu");
+        }
+
         setIsDeleteModalOpen(false);
         setSelectedExpense(null);
     };
 
     const getCategoryInfo = (category: string) => {
         return (
-            EXPENSE_CATEGORIES[category as keyof typeof EXPENSE_CATEGORIES] || {
+            EXPENSE_CATEGORIES[category] || {
                 icon: Receipt,
                 bgColor: "bg-gray-100",
                 textColor: "text-gray-700",
@@ -266,8 +190,9 @@ export default function ExpenseListPage() {
         );
     };
 
-    const formatCurrency = (amount: number) => {
-        return amount.toLocaleString("tr-TR", {
+    const formatCurrency = (amount: number | string) => {
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+        return numAmount.toLocaleString("tr-TR", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         });
@@ -277,60 +202,90 @@ export default function ExpenseListPage() {
         setSearchTerm("");
         setCategoryFilter("Tümü");
         setPaymentMethodFilter("Tümü");
-        setStatusFilter("Tümü");
         setDateFrom("");
         setDateTo("");
     };
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="p-6 flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+                    <p className="text-gray-600">Giderler yükleniyor...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (isError) {
+        return (
+            <div className="p-6">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-red-800 mb-2">Giderler Yüklenemedi</h3>
+                    <p className="text-red-600 mb-4">Veriler alınırken bir hata oluştu.</p>
+                    <button
+                        onClick={() => refetch()}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        Tekrar Dene
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-5 text-white shadow-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-red-100 text-sm font-medium">Toplam Gider</p>
-                                <p className="text-2xl font-bold mt-1">₺{formatCurrency(totalExpense)}</p>
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                        <div className="flex items-center">
+                            <div className="p-2 bg-red-100 rounded-lg">
+                                <TrendingDown className="text-red-600" size={20} />
                             </div>
-                            <div className="p-3 bg-white/20 rounded-lg">
-                                <TrendingDown size={24} />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-blue-100 text-sm font-medium">Bu Ay</p>
-                                <p className="text-2xl font-bold mt-1">₺{formatCurrency(thisMonthExpense)}</p>
-                            </div>
-                            <div className="p-3 bg-white/20 rounded-lg">
-                                <Calendar size={24} />
+                            <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-600">Toplam Gider</p>
+                                <p className="text-xl font-bold text-gray-900">₺{formatCurrency(totalExpense)}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white shadow-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-green-100 text-sm font-medium">Ödenen</p>
-                                <p className="text-2xl font-bold mt-1">{paidCount} Adet</p>
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                        <div className="flex items-center">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                                <Calendar className="text-blue-600" size={20} />
                             </div>
-                            <div className="p-3 bg-white/20 rounded-lg">
-                                <CreditCard size={24} />
+                            <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-600">Bu Ayki Gider</p>
+                                <p className="text-xl font-bold text-gray-900">₺{formatCurrency(thisMonthExpense)}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-5 text-white shadow-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-orange-100 text-sm font-medium">Bekleyen</p>
-                                <p className="text-2xl font-bold mt-1">{pendingCount} Adet</p>
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                        <div className="flex items-center">
+                            <div className="p-2 bg-green-100 rounded-lg">
+                                <FileText className="text-green-600" size={20} />
                             </div>
-                            <div className="p-3 bg-white/20 rounded-lg">
-                                <Receipt size={24} />
+                            <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-600">Belgeli</p>
+                                <p className="text-xl font-bold text-gray-900">{documentCount} Adet</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                        <div className="flex items-center">
+                            <div className="p-2 bg-yellow-100 rounded-lg">
+                                <Receipt className="text-yellow-600" size={20} />
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-600">Tekrarlayan</p>
+                                <p className="text-xl font-bold text-gray-900">{recurringCount} Adet</p>
                             </div>
                         </div>
                     </div>
@@ -405,17 +360,6 @@ export default function ExpenseListPage() {
                                 ))}
                             </select>
 
-                            {/* Status Filter */}
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="Tümü">Tüm Durumlar</option>
-                                <option value="paid">Ödendi</option>
-                                <option value="pending">Bekliyor</option>
-                            </select>
-
                             {/* Date Range */}
                             <div className="flex items-center gap-2">
                                 <input
@@ -436,7 +380,6 @@ export default function ExpenseListPage() {
                             {/* Clear Filters */}
                             {(categoryFilter !== "Tümü" ||
                                 paymentMethodFilter !== "Tümü" ||
-                                statusFilter !== "Tümü" ||
                                 dateFrom ||
                                 dateTo) && (
                                     <button
@@ -471,7 +414,7 @@ export default function ExpenseListPage() {
                                         Ödeme Yöntemi
                                     </th>
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        Durum
+                                        Belge
                                     </th>
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         İşlemler
@@ -487,13 +430,13 @@ export default function ExpenseListPage() {
                                     </tr>
                                 ) : (
                                     paginatedExpenses.map((expense) => {
-                                        const categoryInfo = getCategoryInfo(expense.category);
+                                        const categoryInfo = getCategoryInfo(expense.mainCategory);
                                         const CategoryIcon = categoryInfo.icon;
                                         return (
                                             <tr key={expense.id} className="hover:bg-gray-50 transition-colors">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className="text-sm text-gray-900">
-                                                        {new Date(expense.date).toLocaleDateString("tr-TR")}
+                                                        {new Date(expense.expenseDate).toLocaleDateString("tr-TR")}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -503,16 +446,16 @@ export default function ExpenseListPage() {
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
-                                                                {expense.category}
+                                                                {expense.mainCategory}
                                                             </p>
                                                             <p className="text-xs text-gray-500 truncate max-w-[200px]">
-                                                                {expense.subcategory}
+                                                                {expense.subCategory}
                                                             </p>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="text-sm text-gray-900">{expense.vendor}</span>
+                                                    <span className="text-sm text-gray-900">{expense.supplierName}</span>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-sm font-semibold text-red-600">
@@ -524,12 +467,12 @@ export default function ExpenseListPage() {
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span
-                                                        className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${expense.status === "paid"
-                                                                ? "bg-green-100 text-green-700"
-                                                                : "bg-yellow-100 text-yellow-700"
+                                                        className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${expense.hasDocument
+                                                            ? "bg-green-100 text-green-700"
+                                                            : "bg-gray-100 text-gray-500"
                                                             }`}
                                                     >
-                                                        {expense.status === "paid" ? "Ödendi" : "Bekliyor"}
+                                                        {expense.hasDocument ? "Var" : "Yok"}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -580,13 +523,13 @@ export default function ExpenseListPage() {
                                 >
                                     <ChevronLeft size={18} />
                                 </button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((page) => (
                                     <button
                                         key={page}
                                         onClick={() => setCurrentPage(page)}
                                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentPage === page
-                                                ? "bg-blue-600 text-white"
-                                                : "hover:bg-gray-100 text-gray-700"
+                                            ? "bg-blue-600 text-white"
+                                            : "hover:bg-gray-100 text-gray-700"
                                             }`}
                                     >
                                         {page}
@@ -619,10 +562,10 @@ export default function ExpenseListPage() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-900">
-                                        {selectedExpense.vendor}
+                                        {selectedExpense.supplierName}
                                     </h3>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        {selectedExpense.invoiceNumber}
+                                        {selectedExpense.invoiceNumber || "Fatura No Yok"}
                                     </p>
                                 </div>
                                 <div className="text-right">
@@ -630,12 +573,12 @@ export default function ExpenseListPage() {
                                         ₺{formatCurrency(selectedExpense.amount)}
                                     </p>
                                     <span
-                                        className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full mt-2 ${selectedExpense.status === "paid"
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-yellow-100 text-yellow-700"
+                                        className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full mt-2 ${selectedExpense.isRecurring
+                                            ? "bg-blue-100 text-blue-700"
+                                            : "bg-gray-100 text-gray-700"
                                             }`}
                                     >
-                                        {selectedExpense.status === "paid" ? "Ödendi" : "Bekliyor"}
+                                        {selectedExpense.isRecurring ? "Tekrarlayan" : "Tek Seferlik"}
                                     </span>
                                 </div>
                             </div>
@@ -645,10 +588,10 @@ export default function ExpenseListPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-white p-4 rounded-lg border border-gray-200">
                                 <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                                    Kategori
+                                    Ana Kategori
                                 </p>
                                 <p className="text-sm font-medium text-gray-900">
-                                    {selectedExpense.category}
+                                    {selectedExpense.mainCategory}
                                 </p>
                             </div>
                             <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -656,7 +599,7 @@ export default function ExpenseListPage() {
                                     Alt Kategori
                                 </p>
                                 <p className="text-sm font-medium text-gray-900">
-                                    {selectedExpense.subcategory}
+                                    {selectedExpense.subCategory}
                                 </p>
                             </div>
                             <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -664,7 +607,7 @@ export default function ExpenseListPage() {
                                     Tarih
                                 </p>
                                 <p className="text-sm font-medium text-gray-900">
-                                    {new Date(selectedExpense.date).toLocaleDateString("tr-TR")}
+                                    {new Date(selectedExpense.expenseDate).toLocaleDateString("tr-TR")}
                                 </p>
                             </div>
                             <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -673,6 +616,22 @@ export default function ExpenseListPage() {
                                 </p>
                                 <p className="text-sm font-medium text-gray-900">
                                     {selectedExpense.paymentMethod}
+                                </p>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg border border-gray-200">
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
+                                    Departman
+                                </p>
+                                <p className="text-sm font-medium text-gray-900">
+                                    {selectedExpense.department || "-"}
+                                </p>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg border border-gray-200">
+                                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
+                                    Para Birimi
+                                </p>
+                                <p className="text-sm font-medium text-gray-900">
+                                    {selectedExpense.currency}
                                 </p>
                             </div>
                         </div>
@@ -684,6 +643,43 @@ export default function ExpenseListPage() {
                             </p>
                             <p className="text-sm text-gray-700">{selectedExpense.description}</p>
                         </div>
+
+                        {/* Document Info */}
+                        {selectedExpense.hasDocument && (
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <p className="text-xs text-blue-600 uppercase font-semibold mb-3">
+                                    Ekli Belge
+                                </p>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="text-blue-600" size={20} />
+                                        <div>
+                                            <span className="text-sm text-blue-800 font-medium">{selectedExpense.fileName}</span>
+                                            <span className="text-xs text-blue-600 ml-2">
+                                                ({Math.round((selectedExpense.fileSize || 0) / 1024)} KB)
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => window.open(API_ENDPOINTS.expenses.documentView(selectedExpense.id), '_blank')}
+                                            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
+                                        >
+                                            <Eye size={16} />
+                                            Görüntüle
+                                        </button>
+                                        <a
+                                            href={API_ENDPOINTS.expenses.documentDownload(selectedExpense.id)}
+                                            download
+                                            className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
+                                        >
+                                            <Download size={16} />
+                                            İndir
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </Modal>
@@ -701,7 +697,7 @@ export default function ExpenseListPage() {
                     </p>
                     {selectedExpense && (
                         <div className="bg-red-50 p-4 rounded-lg border border-red-100">
-                            <p className="font-semibold text-gray-900">{selectedExpense.vendor}</p>
+                            <p className="font-semibold text-gray-900">{selectedExpense.supplierName}</p>
                             <p className="text-red-600 font-bold">
                                 ₺{formatCurrency(selectedExpense.amount)}
                             </p>
@@ -716,9 +712,10 @@ export default function ExpenseListPage() {
                         </button>
                         <button
                             onClick={confirmDelete}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                            disabled={isDeleting}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
                         >
-                            Sil
+                            {isDeleting ? "Siliniyor..." : "Sil"}
                         </button>
                     </div>
                 </div>

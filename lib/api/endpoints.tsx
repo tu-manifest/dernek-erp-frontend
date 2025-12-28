@@ -269,4 +269,28 @@ export const API_ENDPOINTS = {
     // DELETE - Tek bir bütçe kalemini sil
     deleteItem: (id: number) => `${API_BASE_URL}/budget/item/${id}`,
   },
+
+  // 💸 GİDER YÖNETİMİ (Expenses)
+  expenses: {
+    // GET - Tüm giderleri getir (pagination destekli)
+    getAll: `${API_BASE_URL}/expenses`,
+
+    // GET - ID'ye göre gider getir
+    getById: (id: number) => `${API_BASE_URL}/expenses/${id}`,
+
+    // POST - Yeni gider oluştur (FormData)
+    create: `${API_BASE_URL}/expenses`,
+
+    // PUT - Gider güncelle
+    update: (id: number) => `${API_BASE_URL}/expenses/${id}`,
+
+    // DELETE - Gider sil
+    delete: (id: number) => `${API_BASE_URL}/expenses/${id}`,
+
+    // GET - Gider belgesini görüntüle (yeni sekmede)
+    documentView: (id: number) => `${API_BASE_URL}/expenses/${id}/document/view`,
+
+    // GET - Gider belgesini indir
+    documentDownload: (id: number) => `${API_BASE_URL}/expenses/${id}/document/download`,
+  },
 };
