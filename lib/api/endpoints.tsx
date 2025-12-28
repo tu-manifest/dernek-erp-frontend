@@ -243,6 +243,12 @@ export const API_ENDPOINTS = {
     stats: `${API_BASE_URL}/dashboard/stats`,
   },
 
+  // 📈 FİNANSAL RAPOR (Financial Report)
+  financialReport: {
+    // GET - Finansal rapor verilerini getir
+    get: `${API_BASE_URL}/financial-report`,
+  },
+
   // 💰 BÜTÇE PLANLAMA (Budget)
   budget: {
     // POST - Yeni bütçe planı oluştur (mevcut yılı siler, yenisini oluşturur)

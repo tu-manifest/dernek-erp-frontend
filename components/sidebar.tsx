@@ -200,25 +200,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         },
       ],
     },
-    {
-      id: "social",
-      title: "Sosyal Medya Yönetimi",
-      icon: Share2,
-      requiredPermission: "canManageSocialMedia",
-      subItems: [
-        { title: "Paylaşım Oluştur", icon: Edit3, path: "/social/create" },
-        {
-          title: "Planlanmış Paylaşımlar",
-          icon: Clock,
-          path: "/social/scheduled",
-        },
-        {
-          title: "Analiz Raporları",
-          icon: BarChart3,
-          path: "/social/analytics",
-        },
-      ],
-    },
+
     {
       id: "finance",
       title: "Finansal İşlemler Yönetimi",

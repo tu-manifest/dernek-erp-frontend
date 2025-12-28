@@ -113,7 +113,6 @@ const CURRENCIES = [
 // Ödeme yöntemleri
 const PAYMENT_METHODS = [
   "Nakit",
-  "Banka Transferi",
   "Banka transferi",
   "Kredi Kartı",
   "Çek",

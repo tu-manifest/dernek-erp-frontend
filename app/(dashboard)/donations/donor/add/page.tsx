@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import useCreateDonor from "@/hooks/useCreateDonor";
+import { MaskedPhoneInput } from "@/components/ui";
 
 interface DonorFormData {
   name: string;
@@ -296,20 +297,14 @@ const AddDonorPage: React.FC = () => {
                   </label>
                   <div className="relative">
                     <Phone
-                      className="absolute left-3 top-3 text-gray-400"
-                      size={18}
+                      className="absolute left-4 top-4 text-gray-400"
+                      size={24}
                     />
-                    <input
-                      type="tel"
+                    <MaskedPhoneInput
                       value={formData.phone}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        handleInputChange("phone", e.target.value)
-                      }
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base bg-white ${errors.phone
-                        ? "border-red-500"
-                        : "border-gray-300"
-                        }`}
-                      placeholder="+90 555 123 45 67"
+                      onChange={(value) => handleInputChange("phone", value)}
+                      hasError={!!errors.phone}
+                      className="pl-14 pr-5 py-4 text-base"
                     />
                   </div>
                   {errors.phone && (
