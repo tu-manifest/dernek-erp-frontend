@@ -93,7 +93,7 @@ const formatCurrency = (amount: number): string => {
 export default function DashboardPage() {
   const { isDemo } = useAuth();
   const router = useRouter();
-  const { activityLogs, isLoading: isLogsLoading, isError: isLogsError } = useGetRecentActivityLogs(10);
+  const { activityLogs, isLoading: isLogsLoading, isError: isLogsError } = useGetRecentActivityLogs(3);
   const { stats, isLoading: isStatsLoading, isError: isStatsError } = useGetDashboardStats();
 
   return (

@@ -227,6 +227,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
       subItems: [
         { title: "Alacak Girişi", icon: CreditCard, path: "/finance/debt-entry" },
         { title: "Gider Girişi", icon: CreditCard, path: "/finance/expense-entry" },
+        { title: "Gider Listesi", icon: List, path: "/finance/expense-list" },
         { title: "Tahsilat Kaydı", icon: Receipt, path: "/finance/collection" },
         {
           title: "Borç Görüntüleme",
