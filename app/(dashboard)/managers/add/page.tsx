@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 import { RegisterPayload, RegisterResponse } from "@/lib/types/auth.types";
+import { MaskedPhoneInput, MaskedEmailInput } from "@/components/ui";
 
 // Modül tanımlamaları
 interface Module {
@@ -395,13 +396,11 @@ export default function CreateManagerPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     E-posta Adresi <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="email"
+                  <MaskedEmailInput
                     value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.email ? "border-red-500" : "border-gray-300"
-                      }`}
-                    placeholder="ahmet@dernek.com"
+                    onChange={(value) => handleInputChange("email", value)}
+                    hasError={!!errors.email}
+                    className="px-4 py-3"
                   />
                   {errors.email && (
                     <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
@@ -416,13 +415,11 @@ export default function CreateManagerPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Telefon Numarası
                   </label>
-                  <input
-                    type="text"
+                  <MaskedPhoneInput
                     value={formData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.phone ? "border-red-500" : "border-gray-300"
-                      }`}
-                    placeholder="+90 555 123 45 67"
+                    onChange={(value) => handleInputChange("phone", value)}
+                    hasError={!!errors.phone}
+                    className="px-4 py-3"
                   />
                   {errors.phone && (
                     <p className="text-red-500 text-sm mt-1 flex items-center gap-1">

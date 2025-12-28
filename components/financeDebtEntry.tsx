@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, User } from "lucide-react";
+import { MaskedCurrencyInput } from "@/components/ui";
 import useGetAllMembers from "../hooks/getAllMembers";
 import useGetAllDonors from "../hooks/useGetAllDonors";
 
@@ -323,19 +324,16 @@ export default function BorcGirisiForm({ onSubmit, isLoading = false }: BorcGiri
             Borç Bedeli <span className="text-red-500">*</span>
           </label>
 
-          <div className={`flex items-center border rounded-md overflow-hidden bg-white ${errors.borcBedeli ? "border-red-400" : "border-gray-200"}`}>
-            <div className="px-3 text-gray-600 text-sm">{currencySymbol(formData.paraCinsi)}</div>
-            <input
-              type="number"
-              name="borcBedeli"
-              value={formData.borcBedeli}
-              onChange={handleInputChange}
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              className="flex-1 px-3 py-2 text-sm outline-none"
-            />
-          </div>
+          <MaskedCurrencyInput
+            value={formData.borcBedeli}
+            onChange={(value) => {
+              setFormData(prev => ({ ...prev, borcBedeli: value }));
+              if (errors.borcBedeli) clearError("borcBedeli");
+            }}
+            currency={currencySymbol(formData.paraCinsi)}
+            hasError={!!errors.borcBedeli}
+            placeholder="0,00"
+          />
 
           {errors.borcBedeli && <p className="text-red-500 text-sm mt-1">{errors.borcBedeli}</p>}
         </div>

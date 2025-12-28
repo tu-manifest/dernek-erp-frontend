@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 // Hook ile kampanya oluşturma
 import useCreateCampaign from "@/hooks/useCreateCampaign";
+import { MaskedIBANInput, MaskedCurrencyInput } from "@/components/ui";
 
 export default function DonationCampaignForm() {
   const router = useRouter();
@@ -186,17 +187,11 @@ export default function DonationCampaignForm() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Hedeflenen Bağış Miktarı (TL)
             </label>
-            <input
-              type="number"
-              name="targetAmount"
+            <MaskedCurrencyInput
               value={formData.targetAmount}
-              onChange={handleChange}
+              onChange={(value) => setFormData(prev => ({ ...prev, targetAmount: value }))}
               disabled={loading}
-              min="0"
-              step="0.01"
-              className={`w-full px-4 py-2 border rounded-lg ${errors.targetAmount ? "border-red-500" : "border-gray-300"
-                } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
-              placeholder="0.00"
+              hasError={!!errors.targetAmount}
             />
             {errors.targetAmount && <p className="text-red-500 text-sm mt-1">{errors.targetAmount}</p>}
           </div>
@@ -256,16 +251,11 @@ export default function DonationCampaignForm() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             IBAN <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            name="iban"
+          <MaskedIBANInput
             value={formData.iban}
-            onChange={handleChange}
+            onChange={(value) => setFormData(prev => ({ ...prev, iban: value }))}
             disabled={loading}
-            className={`w-full px-4 py-2 border rounded-lg ${errors.iban ? "border-red-500" : "border-gray-300"
-              } focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100`}
-            placeholder="TR00 0000 0000 0000 0000 0000 00"
-            maxLength={32}
+            hasError={!!errors.iban}
           />
           {errors.iban && <p className="text-red-500 text-sm mt-1">{errors.iban}</p>}
         </div>

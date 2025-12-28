@@ -21,6 +21,7 @@ import useUpdateMember, { UpdateMemberPayload } from '../hooks/useUpdateMember';
 import useDeleteMember from '../hooks/useDeleteMember';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { MaskedPhoneInput, MaskedEmailInput } from '@/components/ui';
 
 export interface Member {
   id: string;
@@ -549,11 +550,19 @@ const MemberTable: React.FC<MemberTableProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
-                <input type="text" name="phoneNumber" value={editFormData.phoneNumber || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                <MaskedPhoneInput
+                  value={editFormData.phoneNumber || ''}
+                  onChange={(value) => setEditFormData(prev => ({ ...prev, phoneNumber: value }))}
+                  className="px-3 py-2"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
-                <input type="email" name="email" value={editFormData.email || ''} onChange={handleEditFormChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                <MaskedEmailInput
+                  value={editFormData.email || ''}
+                  onChange={(value) => setEditFormData(prev => ({ ...prev, email: value }))}
+                  className="px-3 py-2"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Aidat Miktarı (TL)</label>

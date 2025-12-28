@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, User, Calendar, CreditCard, CheckCircle, UploadCloud, FileText, Layers, Wallet } from "lucide-react";
+import { MaskedCurrencyInput } from "@/components/ui";
 import useGetAllMembers from "../hooks/getAllMembers";
 import useGetAllDonors from "../hooks/useGetAllDonors";
 import useGetDebtorSummary from "../hooks/useGetDebtorSummary";
@@ -335,10 +336,16 @@ export default function TahsilatKaydiForm({ onSubmit, isLoading = false }: Tahsi
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Tahsilat Miktarı <span className="text-red-500">*</span></label>
-          <div className={`flex items-center border rounded-md overflow-hidden bg-white ${errors.tahsilatMiktari ? "border-red-400" : "border-gray-200"}`}>
-            <div className="px-3 text-gray-600 text-sm">{currencySymbol(formData.paraCinsi)}</div>
-            <input type="number" name="tahsilatMiktari" value={formData.tahsilatMiktari} onChange={handleInputChange} step="0.01" min="0" placeholder="0.00" className="flex-1 px-3 py-2 text-sm outline-none" />
-          </div>
+          <MaskedCurrencyInput
+            value={formData.tahsilatMiktari}
+            onChange={(value) => {
+              setFormData(prev => ({ ...prev, tahsilatMiktari: value }));
+              if (errors.tahsilatMiktari) clearError("tahsilatMiktari");
+            }}
+            currency={currencySymbol(formData.paraCinsi)}
+            hasError={!!errors.tahsilatMiktari}
+            placeholder="0,00"
+          />
           {errors.tahsilatMiktari && <p className="text-red-500 text-sm mt-1">{errors.tahsilatMiktari}</p>}
         </div>
 

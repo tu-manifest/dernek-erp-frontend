@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import useCreateExpense from '@/hooks/useCreateExpense';
+import { MaskedCurrencyInput } from '@/components/ui';
 
 // Gider kategorileri ve alt kategorileri
 const EXPENSE_CATEGORIES = {

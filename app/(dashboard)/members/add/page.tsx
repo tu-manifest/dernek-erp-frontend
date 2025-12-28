@@ -16,6 +16,7 @@ import {
 import useGetGroups from "@/hooks/useGetGroups";
 import useAddNewMember from "@/hooks/useAddNewMember";
 import { toast } from "sonner";
+import { MaskedPhoneInput, MaskedTCInput, MaskedEmailInput, MaskedCurrencyInput } from "@/components/ui";
 interface FormData {
   fullName: string;
   tcNumber: string;
@@ -355,9 +356,8 @@ const MembershipForm: React.FC = () => {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handleInputChange("fullName", e.target.value)
                     }
-                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.fullName ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${errors.fullName ? "border-red-500" : "border-gray-300"
+                      }`}
                     placeholder="Adınız ve soyadınız"
                   />
                   {errors.fullName && (
@@ -371,17 +371,11 @@ const MembershipForm: React.FC = () => {
                   <label className="block text-base font-medium text-gray-700 mb-3">
                     T.C. Kimlik Numarası <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <MaskedTCInput
                     value={formData.tcNumber}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleInputChange("tcNumber", e.target.value)
-                    }
-                    maxLength={11}
-                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.tcNumber ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="12345678901"
+                    onChange={(value) => handleInputChange("tcNumber", value)}
+                    hasError={!!errors.tcNumber}
+                    className="px-5 py-4 text-base"
                   />
                   {errors.tcNumber && (
                     <p className="text-red-500 text-sm mt-2">
@@ -405,9 +399,8 @@ const MembershipForm: React.FC = () => {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handleInputChange("birthDate", e.target.value)
                       }
-                      className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                        errors.birthDate ? "border-red-500" : "border-gray-300"
-                      }`}
+                      className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${errors.birthDate ? "border-red-500" : "border-gray-300"
+                        }`}
                     />
                   </div>
                   {errors.birthDate && (
@@ -426,11 +419,10 @@ const MembershipForm: React.FC = () => {
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                       handleInputChange("membershipType", e.target.value)
                     }
-                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.membershipType
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }`}
+                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${errors.membershipType
+                      ? "border-red-500"
+                      : "border-gray-300"
+                      }`}
                     disabled={isLoading}
                   >
                     <option value="">
@@ -443,19 +435,19 @@ const MembershipForm: React.FC = () => {
                     )}
                     {Array.isArray(groups) && groups.length > 0
                       ? groups.map((group: any) => (
-                          <option
-                            key={group.id || group._id}
-                            value={group.id || group._id}
-                          >
-                            {group.groupName || group.group_name || group.name}
-                          </option>
-                        ))
+                        <option
+                          key={group.id || group._id}
+                          value={group.id || group._id}
+                        >
+                          {group.groupName || group.group_name || group.name}
+                        </option>
+                      ))
                       : !isLoading &&
-                        !isError && (
-                          <option value="" disabled>
-                            Henüz grup bulunamadı
-                          </option>
-                        )}
+                      !isError && (
+                        <option value="" disabled>
+                          Henüz grup bulunamadı
+                        </option>
+                      )}
                   </select>
                   {errors.membershipType && (
                     <p className="text-red-500 text-sm mt-2">
@@ -488,18 +480,11 @@ const MembershipForm: React.FC = () => {
                       className="absolute left-4 top-4 text-gray-400"
                       size={24}
                     />
-                    <input
-                      type="text"
+                    <MaskedPhoneInput
                       value={formData.phoneNumber}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        handleInputChange("phoneNumber", e.target.value)
-                      }
-                      className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                        errors.phoneNumber
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }`}
-                      placeholder="+90 555 123 45 67"
+                      onChange={(value) => handleInputChange("phoneNumber", value)}
+                      hasError={!!errors.phoneNumber}
+                      className="pl-14 pr-5 py-4 text-base"
                     />
                   </div>
                   {errors.phoneNumber && (
@@ -518,16 +503,11 @@ const MembershipForm: React.FC = () => {
                       className="absolute left-4 top-4 text-gray-400"
                       size={24}
                     />
-                    <input
-                      type="email"
+                    <MaskedEmailInput
                       value={formData.email}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        handleInputChange("email", e.target.value)
-                      }
-                      className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                        errors.email ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="ornek@email.com"
+                      onChange={(value) => handleInputChange("email", value)}
+                      hasError={!!errors.email}
+                      className="pl-14 pr-5 py-4 text-base"
                     />
                   </div>
                   {errors.email && (
@@ -550,9 +530,8 @@ const MembershipForm: React.FC = () => {
                         handleInputChange("address", e.target.value)
                       }
                       rows={4}
-                      className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base resize-none ${
-                        errors.address ? "border-red-500" : "border-gray-300"
-                      }`}
+                      className={`w-full pl-14 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base resize-none ${errors.address ? "border-red-500" : "border-gray-300"
+                        }`}
                       placeholder="Tam adresinizi yazınız (en azından şehir/ilçe bilgisi)"
                     />
                   </div>
@@ -595,9 +574,8 @@ const MembershipForm: React.FC = () => {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handleInputChange("duesAmount", e.target.value)
                     }
-                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.duesAmount ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${errors.duesAmount ? "border-red-500" : "border-gray-300"
+                      }`}
                     placeholder="0"
                     min="0"
                   />
@@ -617,11 +595,10 @@ const MembershipForm: React.FC = () => {
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                       handleInputChange("duesFrequency", e.target.value)
                     }
-                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.duesFrequency
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }`}
+                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${errors.duesFrequency
+                      ? "border-red-500"
+                      : "border-gray-300"
+                      }`}
                   >
                     <option value="">Seçiniz</option>
                     {duesFrequencies.map((freq: SelectOption) => (
@@ -646,11 +623,10 @@ const MembershipForm: React.FC = () => {
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                       handleInputChange("paymentStatus", e.target.value)
                     }
-                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${
-                      errors.paymentStatus
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }`}
+                    className={`w-full px-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${errors.paymentStatus
+                      ? "border-red-500"
+                      : "border-gray-300"
+                      }`}
                   >
                     {paymentStatuses.map((status: SelectOption) => (
                       <option key={status.value} value={status.value}>
@@ -680,11 +656,10 @@ const MembershipForm: React.FC = () => {
                       handleInputChange("additionalNotes", e.target.value)
                     }
                     rows={4}
-                    className={`w-full pl-3 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base resize-none ${
-                      errors.additionalNotes
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }`}
+                    className={`w-full pl-3 pr-5 py-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base resize-none ${errors.additionalNotes
+                      ? "border-red-500"
+                      : "border-gray-300"
+                      }`}
                     placeholder="Ekstra bilgi varsa buraya yazabilirsiniz..."
                   />
                 </div>
@@ -710,9 +685,8 @@ const MembershipForm: React.FC = () => {
                     <span className="text-gray-500">(PDF/JPEG, max 5MB)</span>
                   </label>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors ${
-                      errors.idCopyFile ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors ${errors.idCopyFile ? "border-red-500" : "border-gray-300"
+                      }`}
                   >
                     <Upload className="mx-auto text-gray-400 mb-3" size={36} />
                     <input
@@ -751,9 +725,8 @@ const MembershipForm: React.FC = () => {
                     <span className="text-gray-500">(JPEG/PNG, max 5MB)</span>
                   </label>
                   <div
-                    className={`border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors ${
-                      errors.photoFile ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-400 transition-colors ${errors.photoFile ? "border-red-500" : "border-gray-300"
+                      }`}
                   >
                     <Upload className="mx-auto text-gray-400 mb-3" size={36} />
                     <input
