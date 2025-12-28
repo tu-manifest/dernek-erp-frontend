@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Info, Calendar, Banknote, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 // Hook ile kampanya oluşturma
 import useCreateCampaign from "@/hooks/useCreateCampaign";
 
@@ -120,12 +121,12 @@ export default function DonationCampaignForm() {
 
     if (success) {
       // 4. Başarılı işlem sonrası
-      alert("Kampanya başarıyla oluşturuldu!");
+      toast.success("Kampanya başarıyla oluşturuldu!");
       router.push("/donations/list");
       router.refresh();
     } else {
       // 5. Hata durumu
-      alert(`Kampanya oluşturulamadı: ${apiError || "Sunucu hatası oluştu."}`);
+      toast.error(`Kampanya oluşturulamadı: ${apiError || "Sunucu hatası oluştu."}`);
     }
   };
 

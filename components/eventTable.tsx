@@ -226,7 +226,7 @@ export default function EventTable({ onAddNew }: EventTableProps) {
   // Excel Export fonksiyonu
   const handleExportExcel = () => {
     if (!filteredEtkinlikler.length) {
-      alert("Listelenecek etkinlik bulunamadı!");
+      toast.error("Listelenecek etkinlik bulunamadı!");
       return;
     }
 

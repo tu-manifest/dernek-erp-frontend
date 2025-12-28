@@ -2,25 +2,28 @@ import useSWRMutation from 'swr/mutation';
 import { API_ENDPOINTS } from '../lib/api/endpoints';
 
 interface addNewMemberRequest {
-    fullName: string;
-    tcNumber: string;
-    birthDate: string;
-    phoneNumber: string;
-    email: string;
-    address: string;
-    group_id: number; // membershipType'ı group_id olarak değiştirdik
-    duesAmount: number;
-    duesFrequency: 'monthly' | 'quarterly' | 'annual';
-    paymentStatus: 'paid' | 'pending' | 'overdue';
-    charterApproval: boolean;
-    kvkkApproval: boolean;
+  fullName: string;
+  tcNumber: string;
+  birthDate: string;
+  phoneNumber: string;
+  email: string;
+  address: string;
+  group_id: number; // membershipType'ı group_id olarak değiştirdik
+  duesAmount: number;
+  duesFrequency: 'monthly' | 'quarterly' | 'annual';
+  paymentStatus: 'paid' | 'pending' | 'overdue';
+  charterApproval: boolean;
+  kvkkApproval: boolean;
 }
 
 async function addNewMember(url: string, { arg }: { arg: addNewMemberRequest }) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
     },
     body: JSON.stringify(arg),
   });

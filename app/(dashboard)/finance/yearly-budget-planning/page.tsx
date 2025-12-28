@@ -7,6 +7,7 @@ import useDeleteBudget from "../../../../hooks/useDeleteBudget";
 import useSaveBudget from "../../../../hooks/useSaveBudget";
 import useDeleteBudgetItem from "../../../../hooks/useDeleteBudgetItem";
 import Modal from "../../../../components/Modal";
+import { toast } from "sonner";
 
 interface LocalBudgetItem {
   id: string;
@@ -182,7 +183,7 @@ export default function BudgetPlanningPage() {
 
   const handleAddItem = () => {
     if (!selectedCategory || !selectedItem || !amount) {
-      alert("Lütfen tüm alanları doldurun");
+      toast.error("Lütfen tüm alanları doldurun");
       return;
     }
 
@@ -214,7 +215,7 @@ export default function BudgetPlanningPage() {
     if (itemToDelete?.apiId) {
       const result = await deleteBudgetItem(itemToDelete.apiId);
       if (!result.success) {
-        alert(`Silme hatası: ${result.error}`);
+        toast.error(`Silme hatası: ${result.error}`);
         return;
       }
     }
@@ -320,7 +321,7 @@ export default function BudgetPlanningPage() {
       refetchBudget();
       refetchYears();
     } else {
-      alert(`Plan silinirken hata: ${result.error}`);
+      toast.error(`Plan silinirken hata: ${result.error}`);
     }
   };
 

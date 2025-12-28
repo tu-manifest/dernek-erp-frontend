@@ -7,6 +7,7 @@ import { Send, Mail, MessageCircle, Settings, X } from "lucide-react";
 import useGetGroups from "@/hooks/useGetGroups";
 import Modal from "@/components/Modal";
 import WhatsAppConnection from "@/components/WhatsAppConnection";
+import { toast } from "sonner";
 
 interface SelectedGroup {
   id: number;
@@ -15,7 +16,7 @@ interface SelectedGroup {
 
 export default function DuyuruGonder() {
   const [activeTab, setActiveTab] = useState<"whatsapp" | "email">("whatsapp");
-  
+
   // WhatsApp Ayarları Modal State
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
 
@@ -53,7 +54,7 @@ export default function DuyuruGonder() {
   const handleAddEmailGroup = (group: any) => {
     // "Tüm Üyeler" zaten seçiliyse diğer grupları ekleme
     if (selectedEmailGroups.some(g => g.id === 0)) {
-      alert('Tüm Üyeler zaten seçili. Önce onu kaldırmalısınız.');
+      toast.warning('Tüm Üyeler zaten seçili. Önce onu kaldırmalısınız.');
       return;
     }
 
@@ -61,7 +62,7 @@ export default function DuyuruGonder() {
       id: group.id,
       name: group.group_name || group.groupName || group.name
     };
-    
+
     if (!selectedEmailGroups.some(g => g.id === newGroup.id)) {
       setSelectedEmailGroups([...selectedEmailGroups, newGroup]);
     }
@@ -76,7 +77,7 @@ export default function DuyuruGonder() {
   const handleAddWhatsappGroup = (group: any) => {
     // "Tüm Üyeler" zaten seçiliyse diğer grupları ekleme
     if (selectedWhatsappGroups.some(g => g.id === 0)) {
-      alert('Tüm Üyeler zaten seçili. Önce onu kaldırmalısınız.');
+      toast.warning('Tüm Üyeler zaten seçili. Önce onu kaldırmalısınız.');
       return;
     }
 
@@ -84,7 +85,7 @@ export default function DuyuruGonder() {
       id: group.id,
       name: group.group_name || group.groupName || group.name
     };
-    
+
     if (!selectedWhatsappGroups.some(g => g.id === newGroup.id)) {
       setSelectedWhatsappGroups([...selectedWhatsappGroups, newGroup]);
     }
@@ -120,7 +121,7 @@ export default function DuyuruGonder() {
       ...emailForm,
       gruplar: selectedEmailGroups
     });
-    alert(`E-posta ${selectedEmailGroups.length} gruba gönderildi!`);
+    toast.success(`E-posta ${selectedEmailGroups.length} gruba gönderildi!`);
   };
 
   const handleWhatsappGonder = () => {
@@ -128,7 +129,7 @@ export default function DuyuruGonder() {
       ...whatsappForm,
       gruplar: selectedWhatsappGroups
     });
-    alert(`WhatsApp mesajı ${selectedWhatsappGroups.length} gruba gönderildi!`);
+    toast.success(`WhatsApp mesajı ${selectedWhatsappGroups.length} gruba gönderildi!`);
   };
 
   return (
@@ -143,29 +144,27 @@ export default function DuyuruGonder() {
         <div className="flex border-b">
           <button
             onClick={() => setActiveTab("email")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-b-2 ${
-              activeTab === "email"
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-b-2 ${activeTab === "email"
                 ? "border-blue-500 text-blue-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
+              }`}
           >
             <Mail size={18} />
             E-Posta Gönder
           </button>
           <button
             onClick={() => setActiveTab("whatsapp")}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-b-2 ${
-              activeTab === "whatsapp"
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-b-2 ${activeTab === "whatsapp"
                 ? "border-green-500 text-green-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
+              }`}
           >
             <MessageCircle size={18} />
             WhatsApp Gönder
           </button>
         </div>
       </div>
-          {/* WhatsApp Gönderme Alanı */}
+      {/* WhatsApp Gönderme Alanı */}
       {activeTab === "whatsapp" && (
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <div className="flex justify-between items-center">
@@ -196,7 +195,7 @@ export default function DuyuruGonder() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Kime
             </label>
-            
+
             {/* Seçili Gruplar - Her zaman görünür textbox benzeri alan */}
             <div className="min-h-[60px] mb-3 flex flex-wrap gap-2 p-3 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-green-400 focus-within:border-transparent">
               {selectedWhatsappGroups.length > 0 ? (
@@ -224,7 +223,7 @@ export default function DuyuruGonder() {
             {/* Grup Seçenekleri */}
             <div className="space-y-2">
               <p className="text-xs text-gray-500 mb-2">Grup seçiniz:</p>
-              
+
               {/* Loading durumu */}
               {groupsLoading && (
                 <div className="flex items-center justify-center py-4">
@@ -250,12 +249,11 @@ export default function DuyuruGonder() {
                       selectedWhatsappGroups.some(g => g.id === 0) ||
                       (selectedWhatsappGroups.length > 0 && !selectedWhatsappGroups.some(g => g.id === 0))
                     }
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedWhatsappGroups.some(g => g.id === 0) ||
-                      (selectedWhatsappGroups.length > 0 && !selectedWhatsappGroups.some(g => g.id === 0))
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedWhatsappGroups.some(g => g.id === 0) ||
+                        (selectedWhatsappGroups.length > 0 && !selectedWhatsappGroups.some(g => g.id === 0))
                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                         : 'bg-green-100 text-green-700 hover:bg-green-200'
-                    }`}
+                      }`}
                   >
                     Tüm Üyeler
                   </button>
@@ -269,12 +267,11 @@ export default function DuyuruGonder() {
                         selectedWhatsappGroups.some(g => g.id === group.id) ||
                         selectedWhatsappGroups.some(g => g.id === 0)
                       }
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedWhatsappGroups.some(g => g.id === group.id) ||
-                        selectedWhatsappGroups.some(g => g.id === 0)
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedWhatsappGroups.some(g => g.id === group.id) ||
+                          selectedWhatsappGroups.some(g => g.id === 0)
                           ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                           : 'bg-green-100 text-green-700 hover:bg-green-200'
-                      }`}
+                        }`}
                     >
                       {group.group_name || group.groupName || group.name}
                     </button>
@@ -289,15 +286,14 @@ export default function DuyuruGonder() {
             <button
               onClick={handleWhatsappGonder}
               disabled={selectedWhatsappGroups.length === 0}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors font-medium ${
-                selectedWhatsappGroups.length === 0
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors font-medium ${selectedWhatsappGroups.length === 0
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700 text-white'
-              }`}
+                }`}
             >
               <Send size={18} />
-              {selectedWhatsappGroups.length > 0 
-                ? `${selectedWhatsappGroups.length} Gruba Gönder` 
+              {selectedWhatsappGroups.length > 0
+                ? `${selectedWhatsappGroups.length} Gruba Gönder`
                 : 'Grup Seçiniz'}
             </button>
           </div>
@@ -345,7 +341,7 @@ export default function DuyuruGonder() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Kime
             </label>
-            
+
             {/* Seçili Gruplar - Her zaman görünür textbox benzeri alan */}
             <div className="min-h-[60px] mb-3 flex flex-wrap gap-2 p-3 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-transparent">
               {selectedEmailGroups.length > 0 ? (
@@ -373,7 +369,7 @@ export default function DuyuruGonder() {
             {/* Grup Seçenekleri */}
             <div className="space-y-2">
               <p className="text-xs text-gray-500 mb-2">Grup seçiniz:</p>
-              
+
               {/* Loading durumu */}
               {groupsLoading && (
                 <div className="flex items-center justify-center py-4">
@@ -399,12 +395,11 @@ export default function DuyuruGonder() {
                       selectedEmailGroups.some(g => g.id === 0) ||
                       (selectedEmailGroups.length > 0 && !selectedEmailGroups.some(g => g.id === 0))
                     }
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedEmailGroups.some(g => g.id === 0) ||
-                      (selectedEmailGroups.length > 0 && !selectedEmailGroups.some(g => g.id === 0))
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedEmailGroups.some(g => g.id === 0) ||
+                        (selectedEmailGroups.length > 0 && !selectedEmailGroups.some(g => g.id === 0))
                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                         : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                    }`}
+                      }`}
                   >
                     Tüm Üyeler
                   </button>
@@ -418,12 +413,11 @@ export default function DuyuruGonder() {
                         selectedEmailGroups.some(g => g.id === group.id) ||
                         selectedEmailGroups.some(g => g.id === 0)
                       }
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedEmailGroups.some(g => g.id === group.id) ||
-                        selectedEmailGroups.some(g => g.id === 0)
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedEmailGroups.some(g => g.id === group.id) ||
+                          selectedEmailGroups.some(g => g.id === 0)
                           ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                           : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                      }`}
+                        }`}
                     >
                       {group.group_name || group.groupName || group.name}
                     </button>
@@ -438,22 +432,21 @@ export default function DuyuruGonder() {
             <button
               onClick={handleEmailGonder}
               disabled={selectedEmailGroups.length === 0}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors font-medium ${
-                selectedEmailGroups.length === 0
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors font-medium ${selectedEmailGroups.length === 0
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
+                }`}
             >
               <Send size={18} />
-              {selectedEmailGroups.length > 0 
-                ? `${selectedEmailGroups.length} Gruba Gönder` 
+              {selectedEmailGroups.length > 0
+                ? `${selectedEmailGroups.length} Gruba Gönder`
                 : 'Grup Seçiniz'}
             </button>
           </div>
         </div>
       )}
 
-  
+
       {/* WhatsApp Bağlantı Modal */}
       <Modal
         isOpen={isWhatsAppModalOpen}

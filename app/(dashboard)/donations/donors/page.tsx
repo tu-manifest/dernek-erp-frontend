@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Modal from '@/components/Modal';
+import { toast } from 'sonner';
 import useGetAllDonors, { Donor } from '@/hooks/useGetAllDonors';
 import useGetDonorDonations from '@/hooks/useGetDonorDonations';
 import useUpdateDonor from '@/hooks/useUpdateDonor';
@@ -173,7 +174,7 @@ export default function ListDonorPage() {
       ? donors.filter(d => selectedDonors.includes(d.id))
       : filteredDonors;
 
-    alert(`${selectedData.length} bağışçı ${format.toUpperCase()} formatında dışa aktarılıyor...`);
+    toast.info(`${selectedData.length} bağışçı ${format.toUpperCase()} formatında dışa aktarılıyor...`);
     setExportMenuOpen(false);
   };
 
