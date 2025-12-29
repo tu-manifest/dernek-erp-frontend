@@ -109,6 +109,30 @@ export const API_ENDPOINTS = {
     updateEventStatus: (id: number) => `${API_BASE_URL}/events/${id}/status`,
   },
 
+  // 📋 TOPLANTI YÖNETİMİ (Meetings)
+  meetings: {
+    // CREATE - Yeni toplantı oluştur (POST /meetings)
+    createMeeting: `${API_BASE_URL}/meetings`,
+
+    // READ - Tüm toplantıları getir (GET /meetings)
+    getAllMeetings: `${API_BASE_URL}/meetings`,
+
+    // READ - Filtreli liste (GET /meetings?status=Planlandı)
+    getMeetingsByStatus: (status: string) => `${API_BASE_URL}/meetings?status=${status}`,
+
+    // READ - ID'ye göre toplantı getir (GET /meetings/:id)
+    getMeetingById: (id: number) => `${API_BASE_URL}/meetings/${id}`,
+
+    // UPDATE - Toplantı güncelle (PUT /meetings/:id)
+    updateMeeting: (id: number) => `${API_BASE_URL}/meetings/${id}`,
+
+    // DELETE - Toplantı sil (DELETE /meetings/:id)
+    deleteMeeting: (id: number) => `${API_BASE_URL}/meetings/${id}`,
+
+    // PATCH - Durum güncelle (PATCH /meetings/:id/status)
+    updateMeetingStatus: (id: number) => `${API_BASE_URL}/meetings/${id}/status`,
+  },
+
   // 💰 DIŞ BAĞIŞÇI YÖNETİMİ (Donors)
   donors: {
     // CREATE - Yeni bağışçı oluştur (POST /donors)
