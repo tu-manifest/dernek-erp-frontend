@@ -16,7 +16,7 @@ export default function MeetingScheduleForm() {
         date: "",
         startTime: "",
         endTime: "",
-        locationType: "Fiziksel" as "Fiziksel" | "Çevrimiçi",
+        meetingFormat: "Fiziksel" as "Fiziksel" | "Çevrimiçi",
         location: "",
         platform: "",
         meetingLink: "",
@@ -52,11 +52,11 @@ export default function MeetingScheduleForm() {
             newErrors.endTime = "Bitiş saati başlangıç saatinden sonra olmalıdır";
         }
 
-        if (formData.locationType === "Fiziksel" && !formData.location.trim()) {
+        if (formData.meetingFormat === "Fiziksel" && !formData.location.trim()) {
             newErrors.location = "Fiziksel toplantılar için konum gereklidir";
         }
 
-        if (formData.locationType === "Çevrimiçi") {
+        if (formData.meetingFormat === "Çevrimiçi") {
             if (!formData.platform) newErrors.platform = "Platform seçimi gereklidir";
             if (!formData.meetingLink.trim()) newErrors.meetingLink = "Toplantı linki gereklidir";
         }
@@ -83,13 +83,13 @@ export default function MeetingScheduleForm() {
                 startTime: formData.startTime,
                 endTime: formData.endTime,
                 meetingType: formData.meetingType,
-                locationType: formData.locationType,
+                meetingFormat: formData.meetingFormat,
                 agenda: formData.agenda,
                 participantCount: formData.participantCount ? parseInt(formData.participantCount) : undefined,
             };
 
             // Konum tipine göre bilgileri ekle
-            if (formData.locationType === "Fiziksel") {
+            if (formData.meetingFormat === "Fiziksel") {
                 payload.location = formData.location;
             } else {
                 payload.platform = formData.platform;
@@ -270,9 +270,9 @@ export default function MeetingScheduleForm() {
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="radio"
-                                        name="locationType"
+                                        name="meetingFormat"
                                         value="Fiziksel"
-                                        checked={formData.locationType === "Fiziksel"}
+                                        checked={formData.meetingFormat === "Fiziksel"}
                                         onChange={handleChange}
                                         disabled={isSubmitting}
                                         className="w-4 h-4 text-blue-600"
@@ -282,9 +282,9 @@ export default function MeetingScheduleForm() {
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="radio"
-                                        name="locationType"
+                                        name="meetingFormat"
                                         value="Çevrimiçi"
-                                        checked={formData.locationType === "Çevrimiçi"}
+                                        checked={formData.meetingFormat === "Çevrimiçi"}
                                         onChange={handleChange}
                                         disabled={isSubmitting}
                                         className="w-4 h-4 text-blue-600"
@@ -295,7 +295,7 @@ export default function MeetingScheduleForm() {
                         </div>
 
                         {/* Fiziksel - Konum Bilgisi */}
-                        {formData.locationType === "Fiziksel" && (
+                        {formData.meetingFormat === "Fiziksel" && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Toplantı Yeri <span className="text-red-500">*</span>
@@ -315,7 +315,7 @@ export default function MeetingScheduleForm() {
                         )}
 
                         {/* Online - Platform ve Link */}
-                        {formData.locationType === "Çevrimiçi" && (
+                        {formData.meetingFormat === "Çevrimiçi" && (
                             <>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -17,7 +17,7 @@ export interface Meeting {
     startTime: string;
     endTime: string;
     meetingType: MeetingType;
-    locationType: 'Fiziksel' | 'Çevrimiçi';
+    meetingFormat: 'Fiziksel' | 'Çevrimiçi';
     location: string | null;
     platform: string | null;
     meetingLink: string | null;
@@ -36,7 +36,7 @@ export interface CreateMeetingPayload {
     startTime: string;
     endTime: string;
     meetingType: MeetingType;
-    locationType: 'Fiziksel' | 'Çevrimiçi';
+    meetingFormat: 'Fiziksel' | 'Çevrimiçi';
     location?: string;
     platform?: string;
     meetingLink?: string;

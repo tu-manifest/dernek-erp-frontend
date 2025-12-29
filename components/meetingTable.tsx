@@ -38,7 +38,7 @@ export default function MeetingTable({ onAddNew }: MeetingTableProps) {
         startTime: "",
         endTime: "",
         meetingType: "Yönetim Kurulu" as MeetingType,
-        locationType: "Fiziksel" as "Fiziksel" | "Çevrimiçi",
+        meetingFormat: "Fiziksel" as "Fiziksel" | "Çevrimiçi",
         location: "",
         platform: "",
         meetingLink: "",
@@ -150,7 +150,7 @@ export default function MeetingTable({ onAddNew }: MeetingTableProps) {
             startTime: meeting.startTime ? meeting.startTime.substring(0, 5) : "",
             endTime: meeting.endTime ? meeting.endTime.substring(0, 5) : "",
             meetingType: meeting.meetingType,
-            locationType: meeting.locationType,
+            meetingFormat: meeting.meetingFormat,
             location: meeting.location || "",
             platform: meeting.platform || "",
             meetingLink: meeting.meetingLink || "",
@@ -183,14 +183,14 @@ export default function MeetingTable({ onAddNew }: MeetingTableProps) {
                 startTime: editFormData.startTime,
                 endTime: editFormData.endTime,
                 meetingType: editFormData.meetingType,
-                locationType: editFormData.locationType,
+                meetingFormat: editFormData.meetingFormat,
                 agenda: editFormData.agenda,
                 minutes: editFormData.minutes || undefined,
                 status: editFormData.status,
                 participantCount: editFormData.participantCount ? parseInt(editFormData.participantCount) : undefined,
             };
 
-            if (editFormData.locationType === "Fiziksel") {
+            if (editFormData.meetingFormat === "Fiziksel") {
                 payload.location = editFormData.location;
             } else {
                 payload.platform = editFormData.platform;
@@ -250,7 +250,7 @@ export default function MeetingTable({ onAddNew }: MeetingTableProps) {
             "Tarih": formatDate(meeting.date),
             "Başlangıç": formatTime(meeting.startTime),
             "Bitiş": formatTime(meeting.endTime),
-            "Şekil": meeting.locationType,
+            "Şekil": meeting.meetingFormat,
             "Yer/Platform": meeting.location || meeting.platform || "",
             "Katılımcı": meeting.participantCount || "",
             "Durum": meeting.status,
@@ -503,11 +503,11 @@ export default function MeetingTable({ onAddNew }: MeetingTableProps) {
                                     </td>
                                     <td className="px-4 py-4">
                                         <div className="flex items-center">
-                                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${meeting.locationType === "Çevrimiçi"
+                                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${meeting.meetingFormat === "Çevrimiçi"
                                                 ? 'bg-blue-100 text-blue-800'
                                                 : 'bg-orange-100 text-orange-800'
                                                 }`}>
-                                                {meeting.locationType === "Çevrimiçi" ? "Online" : "Fiziksel"}
+                                                {meeting.meetingFormat === "Çevrimiçi" ? "Online" : "Fiziksel"}
                                             </span>
                                         </div>
                                         <div className="text-sm text-gray-600 mt-1">
@@ -804,9 +804,9 @@ export default function MeetingTable({ onAddNew }: MeetingTableProps) {
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="radio"
-                                            name="locationType"
+                                            name="meetingFormat"
                                             value="Fiziksel"
-                                            checked={editFormData.locationType === "Fiziksel"}
+                                            checked={editFormData.meetingFormat === "Fiziksel"}
                                             onChange={handleEditFormChange}
                                             className="w-4 h-4 text-blue-600"
                                         />
@@ -815,9 +815,9 @@ export default function MeetingTable({ onAddNew }: MeetingTableProps) {
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="radio"
-                                            name="locationType"
+                                            name="meetingFormat"
                                             value="Çevrimiçi"
-                                            checked={editFormData.locationType === "Çevrimiçi"}
+                                            checked={editFormData.meetingFormat === "Çevrimiçi"}
                                             onChange={handleEditFormChange}
                                             className="w-4 h-4 text-blue-600"
                                         />
@@ -827,7 +827,7 @@ export default function MeetingTable({ onAddNew }: MeetingTableProps) {
                             </div>
 
                             {/* Fiziksel - Konum */}
-                            {editFormData.locationType === "Fiziksel" && (
+                            {editFormData.meetingFormat === "Fiziksel" && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Toplantı Yeri
@@ -844,7 +844,7 @@ export default function MeetingTable({ onAddNew }: MeetingTableProps) {
                             )}
 
                             {/* Online - Platform ve Link */}
-                            {editFormData.locationType === "Çevrimiçi" && (
+                            {editFormData.meetingFormat === "Çevrimiçi" && (
                                 <>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
