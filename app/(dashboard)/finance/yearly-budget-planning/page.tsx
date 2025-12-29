@@ -262,10 +262,12 @@ export default function BudgetPlanningPage() {
     setIsSaving(false);
 
     if (result.success) {
+      toast.success('Bütçe planı başarıyla kaydedildi!');
       setSaveMessage({ type: 'success', text: 'Bütçe planı başarıyla kaydedildi!' });
       refetchBudget();
       refetchYears();
     } else {
+      toast.error(result.error || 'Kaydetme sırasında bir hata oluştu.');
       setSaveMessage({ type: 'error', text: result.error || 'Kaydetme sırasında bir hata oluştu.' });
     }
 

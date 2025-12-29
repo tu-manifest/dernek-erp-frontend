@@ -81,7 +81,6 @@ const EXPENSE_CATEGORIES: Record<string, { icon: React.ElementType; color: strin
 const PAYMENT_METHODS = [
     "Tümü",
     "Nakit",
-    "Banka Transferi",
     "Banka transferi",
     "Kredi Kartı",
     "Çek",

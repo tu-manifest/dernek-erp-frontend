@@ -14,7 +14,7 @@ interface MaskedTCInputProps {
 }
 
 /**
- * Turkish T.C. Kimlik No input with mask: XXX XXX XXX XX (11 digits)
+ * Turkish T.C. Kimlik No input - plain 11 digit format
  */
 const MaskedTCInput = forwardRef<HTMLInputElement, MaskedTCInputProps>(
     (
@@ -22,7 +22,7 @@ const MaskedTCInput = forwardRef<HTMLInputElement, MaskedTCInputProps>(
             value,
             onChange,
             className = "",
-            placeholder = "XXX XXX XXX XX",
+            placeholder = "T.C. Kimlik Numarası",
             hasError = false,
             disabled = false,
             id,
@@ -32,30 +32,7 @@ const MaskedTCInput = forwardRef<HTMLInputElement, MaskedTCInputProps>(
     ) => {
         const [displayValue, setDisplayValue] = useState("");
 
-        // Format TC for display: XXX XXX XXX XX
-        const formatTC = (input: string): string => {
-            // Remove all non-digits
-            const digits = input.replace(/\D/g, "").slice(0, 11);
-
-            // Build formatted string
-            let formatted = "";
-            if (digits.length > 0) {
-                formatted = digits.slice(0, 3);
-            }
-            if (digits.length > 3) {
-                formatted += " " + digits.slice(3, 6);
-            }
-            if (digits.length > 6) {
-                formatted += " " + digits.slice(6, 9);
-            }
-            if (digits.length > 9) {
-                formatted += " " + digits.slice(9, 11);
-            }
-
-            return formatted;
-        };
-
-        // Clean TC for API (only digits)
+        // Clean TC - only allow digits, max 11
         const cleanTC = (input: string): string => {
             return input.replace(/\D/g, "").slice(0, 11);
         };
@@ -63,7 +40,7 @@ const MaskedTCInput = forwardRef<HTMLInputElement, MaskedTCInputProps>(
         // Update display when value prop changes
         useEffect(() => {
             if (value) {
-                setDisplayValue(formatTC(value));
+                setDisplayValue(cleanTC(value));
             } else {
                 setDisplayValue("");
             }
@@ -71,13 +48,13 @@ const MaskedTCInput = forwardRef<HTMLInputElement, MaskedTCInputProps>(
 
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const input = e.target.value;
-            const formatted = formatTC(input);
-            setDisplayValue(formatted);
-            onChange(cleanTC(input));
+            const cleaned = cleanTC(input);
+            setDisplayValue(cleaned);
+            onChange(cleaned);
         };
 
         const baseClasses =
-            "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono tracking-wide";
+            "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
         const errorClasses = hasError ? "border-red-500" : "border-gray-300";
         const disabledClasses = disabled ? "bg-gray-100 cursor-not-allowed" : "";
 
@@ -91,7 +68,9 @@ const MaskedTCInput = forwardRef<HTMLInputElement, MaskedTCInputProps>(
                 onChange={handleChange}
                 placeholder={placeholder}
                 disabled={disabled}
-                maxLength={14}
+                maxLength={11}
+                inputMode="numeric"
+                pattern="[0-9]*"
                 className={`${baseClasses} ${errorClasses} ${disabledClasses} ${className}`}
             />
         );

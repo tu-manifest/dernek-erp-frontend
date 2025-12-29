@@ -419,20 +419,13 @@ export default function ExpenseEntryPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Gider Tutarı <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) => handleInputChange("amount", e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12 ${errors.amount ? "border-red-500" : "border-gray-300"
-                    }`}
-                  placeholder="0.00"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
-                  {getCurrencySymbol(formData.currency)}
-                </span>
-              </div>
+              <MaskedCurrencyInput
+                value={formData.amount}
+                onChange={(value) => handleInputChange("amount", value)}
+                currency={getCurrencySymbol(formData.currency)}
+                hasError={!!errors.amount}
+                placeholder="0,00"
+              />
               {errors.amount && (
                 <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
                   <AlertCircle size={14} />

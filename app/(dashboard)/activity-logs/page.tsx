@@ -139,7 +139,7 @@ export default function ActivityLogsPage() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [showFilters, setShowFilters] = useState(false);
+    const [showFilters, setShowFilters] = useState(true);
 
     // Build filters object
     const filters: ActivityLogFilters = useMemo(() => ({
@@ -153,16 +153,26 @@ export default function ActivityLogsPage() {
 
     const { activityLogs, totalCount, totalPages, isLoading, isError, error, refetch, setFilters } = useGetActivityLogs(filters);
 
-    // Handle filter changes
-    const handleApplyFilters = () => {
+    // Handle filter changes - Auto-apply on selection
+    const handleFilterChange = (filterType: string, value: string) => {
+        if (filterType === 'entityType') {
+            setEntityType(value);
+        } else if (filterType === 'action') {
+            setAction(value);
+        } else if (filterType === 'startDate') {
+            setStartDate(value);
+        } else if (filterType === 'endDate') {
+            setEndDate(value);
+        }
+
         setCurrentPage(1);
         setFilters({
             page: 1,
             limit: 20,
-            ...(entityType && { entityType }),
-            ...(action && { action }),
-            ...(startDate && { startDate }),
-            ...(endDate && { endDate }),
+            ...(filterType === 'entityType' ? (value && { entityType: value }) : (entityType && { entityType })),
+            ...(filterType === 'action' ? (value && { action: value }) : (action && { action })),
+            ...(filterType === 'startDate' ? (value && { startDate: value }) : (startDate && { startDate })),
+            ...(filterType === 'endDate' ? (value && { endDate: value }) : (endDate && { endDate })),
         });
     };
 
@@ -206,7 +216,7 @@ export default function ActivityLogsPage() {
                             <ClipboardList className="h-6 w-6 text-blue-600" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Aktivite Logları</h1>
+                            <h1 className="text-2xl font-bold text-gray-900">Aktivite Kayıtları</h1>
                             <p className="text-sm text-gray-600">Sistemdeki tüm aktiviteleri görüntüleyin</p>
                         </div>
                     </div>
@@ -256,7 +266,7 @@ export default function ActivityLogsPage() {
                             </label>
                             <select
                                 value={entityType}
-                                onChange={(e) => setEntityType(e.target.value)}
+                                onChange={(e) => handleFilterChange('entityType', e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
                                 {ENTITY_TYPES.map((type) => (
@@ -274,7 +284,7 @@ export default function ActivityLogsPage() {
                             </label>
                             <select
                                 value={action}
-                                onChange={(e) => setAction(e.target.value)}
+                                onChange={(e) => handleFilterChange('action', e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
                                 {ACTION_TYPES.map((type) => (
@@ -293,7 +303,7 @@ export default function ActivityLogsPage() {
                             <input
                                 type="date"
                                 value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
+                                onChange={(e) => handleFilterChange('startDate', e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
@@ -306,31 +316,16 @@ export default function ActivityLogsPage() {
                             <input
                                 type="date"
                                 value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
+                                onChange={(e) => handleFilterChange('endDate', e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
-                        </div>
-
-                        {/* Apply Button */}
-                        <div className="flex items-end">
-                            <button
-                                onClick={handleApplyFilters}
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Search className="h-4 w-4" />
-                                Uygula
-                            </button>
                         </div>
                     </div>
                 )}
             </div>
 
             {/* Results Info */}
-            <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-gray-600">
-                    Toplam <span className="font-semibold">{totalCount}</span> kayıt
-                </p>
-            </div>
+
 
             {/* Activity Logs Table */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -375,9 +370,6 @@ export default function ActivityLogsPage() {
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                         Varlık Adı
                                     </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                        Açıklama
-                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -417,45 +409,43 @@ export default function ActivityLogsPage() {
                                                 {log.entityName || '-'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-sm text-gray-600 line-clamp-2">
-                                                {log.description || '-'}
-                                            </span>
-                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                )}
+                )
+                }
 
                 {/* Pagination */}
-                {!isLoading && !isError && activityLogs.length > 0 && (
-                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                        <p className="text-sm text-gray-600">
-                            Sayfa {currentPage} / {totalPages}
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handlePreviousPage}
-                                disabled={currentPage === 1}
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                                Önceki
-                            </button>
-                            <button
-                                onClick={handleNextPage}
-                                disabled={currentPage >= totalPages}
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                            >
-                                Sonraki
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
+                {
+                    !isLoading && !isError && activityLogs.length > 0 && (
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                            <p className="text-sm text-gray-600">
+                                Sayfa {currentPage} / {totalPages}
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handlePreviousPage}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    Önceki
+                                </button>
+                                <button
+                                    onClick={handleNextPage}
+                                    disabled={currentPage >= totalPages}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                >
+                                    Sonraki
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
-        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 }
