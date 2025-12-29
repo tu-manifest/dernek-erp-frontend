@@ -155,6 +155,13 @@ export default function ActivityLogsPage() {
 
     // Handle filter changes - Auto-apply on selection
     const handleFilterChange = (filterType: string, value: string) => {
+        // Yeni değerleri hesapla
+        const newEntityType = filterType === 'entityType' ? value : entityType;
+        const newAction = filterType === 'action' ? value : action;
+        const newStartDate = filterType === 'startDate' ? value : startDate;
+        const newEndDate = filterType === 'endDate' ? value : endDate;
+
+        // State'leri güncelle
         if (filterType === 'entityType') {
             setEntityType(value);
         } else if (filterType === 'action') {
@@ -166,14 +173,19 @@ export default function ActivityLogsPage() {
         }
 
         setCurrentPage(1);
-        setFilters({
+
+        // Yeni filter objesi oluştur - boş değerler dahil edilmez
+        const newFilters: ActivityLogFilters = {
             page: 1,
             limit: 20,
-            ...(filterType === 'entityType' ? (value && { entityType: value }) : (entityType && { entityType })),
-            ...(filterType === 'action' ? (value && { action: value }) : (action && { action })),
-            ...(filterType === 'startDate' ? (value && { startDate: value }) : (startDate && { startDate })),
-            ...(filterType === 'endDate' ? (value && { endDate: value }) : (endDate && { endDate })),
-        });
+        };
+
+        if (newEntityType) newFilters.entityType = newEntityType;
+        if (newAction) newFilters.action = newAction;
+        if (newStartDate) newFilters.startDate = newStartDate;
+        if (newEndDate) newFilters.endDate = newEndDate;
+
+        setFilters(newFilters);
     };
 
     // Clear all filters

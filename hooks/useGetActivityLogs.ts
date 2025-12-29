@@ -69,7 +69,8 @@ export default function useGetActivityLogs(
     }, [fetchLogs]);
 
     const setFilters = useCallback((newFilters: ActivityLogFilters) => {
-        setFiltersState((prev) => ({ ...prev, ...newFilters }));
+        // Merge yapmak yerine tüm filtreleri değiştir - böylece temizlenen filtreler düzgün silinir
+        setFiltersState(newFilters);
     }, []);
 
     return {
